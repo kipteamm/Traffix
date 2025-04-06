@@ -14,11 +14,25 @@ class GameRenderer {
 public:
     explicit GameRenderer(Game* game, sf::RenderWindow* window, sf::View* view);
 
+    void render();
+
 private:
     Game* game;
 
     sf::RenderWindow* window;
-    sf::View* view;
+    sf::View* camera;
+
+    float zoom = 1.f;
+    bool dragging = false;
+    sf::Vector2i dragStart;
+
+    void handleEvents();
+
+    void windowViewEvent(const sf::Event& event) const;
+    void mouseClickEvent(const sf::Event& event);
+    void mouseReleaseEvent(const sf::Event& event);
+    void mouseWheelEvent(const sf::Event& event);
+    void handleMouseDrag();
 };
 
 

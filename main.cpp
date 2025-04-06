@@ -1,14 +1,14 @@
+#include <iostream>
 #include <SFML/Graphics.hpp>
 
 #include "Game.h"
 
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "TrafficSimulator");
+    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Traffix");
     sf::View view = window.getDefaultView();
 
     Game game = Game(&window, &view);
-
     while (window.isOpen()) {
         game.update();
         game.render();

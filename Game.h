@@ -5,8 +5,12 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "SFML/Graphics.hpp"
+
 #include "GameRenderer.h"
 
+
+class GameRenderer;
 
 class Game {
 public:
@@ -17,9 +21,6 @@ public:
 
 private:
     GameRenderer* gameRenderer;
-
-    sf::RenderWindow* window;
-    sf::View* view;
 };
 
 

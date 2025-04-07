@@ -6,9 +6,8 @@
 
 int main() {
     sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Traffix");
-    sf::View view = window.getDefaultView();
 
-    Game game = Game(&window, &view);
+    Game game = Game(&window);
     while (window.isOpen()) {
         game.update();
         game.render();

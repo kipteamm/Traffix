@@ -5,7 +5,16 @@
 #include "GameRenderer.h"
 
 
-GameRenderer::GameRenderer(Game *game, sf::RenderWindow *window, sf::View *view) : game(game), window(window), camera(view) {
+GameRenderer::GameRenderer(Game *game, sf::RenderWindow *window) : game(game), window(window) {
+    camera = window->getDefaultView();
+    uiManager = new UIManager(game, *window);
+
+    const sf::Vector2u size = window->getSize();
+    const float width = static_cast<float>(size.x);
+    const float height = static_cast<float>(size.y);
+    ui.setSize(width, height);
+    ui.setCenter(width / 2, height / 2);
+
     window->setFramerateLimit(60);
 }
 
@@ -14,14 +23,12 @@ void GameRenderer::render() {
     handleEvents();
     handleMouseDrag();
 
-    window->setView(*camera);
-    window->clear();
+    window->clear(sf::Color(64, 156, 12));
+    window->setView(camera);
+    renderWorld();
 
-    sf::RectangleShape box(sf::Vector2f(200.f, 200.f));
-    box.setFillColor(sf::Color::Green);
-    box.setOrigin(50.f, 50.f);
-    box.setPosition(0.f, 0.f);
-    window->draw(box);
+    window->setView(ui);
+    uiManager->render();
 
     window->display();
 }
@@ -52,9 +59,13 @@ void GameRenderer::handleEvents() {
     }
 }
 
-void GameRenderer::windowViewEvent(const sf::Event& event) const {
-    camera->setSize(event.size.width * zoom, event.size.height * zoom);
-    // view.setCenter(event.size.width / 2.0f, event.size.height / 2.0f);
+void GameRenderer::windowViewEvent(const sf::Event& event) {
+    const float width = event.size.width;
+    const float height = event.size.height;
+
+    camera.setSize(width * zoom, height * zoom);
+    ui.setSize(width, height);
+    ui.setCenter(width / 2, height / 2);
 }
 
 void GameRenderer::mouseWheelEvent(const sf::Event &event) {
@@ -65,14 +76,14 @@ void GameRenderer::mouseWheelEvent(const sf::Event &event) {
     }
 
     const sf::Vector2i pixelPos = sf::Mouse::getPosition(*window);
-    const sf::Vector2f beforeZoom = window->mapPixelToCoords(pixelPos, *camera);
+    const sf::Vector2f beforeZoom = window->mapPixelToCoords(pixelPos, camera);
 
-    camera->setSize(window->getSize().x * zoom, window->getSize().y * zoom);
+    camera.setSize(window->getSize().x * zoom, window->getSize().y * zoom);
 
-    const sf::Vector2f afterZoom = window->mapPixelToCoords(pixelPos, *camera);
+    const sf::Vector2f afterZoom = window->mapPixelToCoords(pixelPos, camera);
     const sf::Vector2f offset = beforeZoom - afterZoom;
 
-    camera->move(offset);
+    camera.move(offset);
 }
 
 void GameRenderer::mouseClickEvent(const sf::Event &event) {
@@ -96,7 +107,7 @@ void GameRenderer::handleMouseDrag() {
 
     const sf::Vector2i currentPos = sf::Mouse::getPosition();
     const sf::Vector2f worldDelta = window->mapPixelToCoords(dragStart) - window->mapPixelToCoords(currentPos);
-    camera->move(worldDelta);
+    camera.move(worldDelta);
 
     dragStart = currentPos;
 }

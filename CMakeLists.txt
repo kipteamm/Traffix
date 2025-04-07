@@ -15,6 +15,8 @@ add_executable(Traffix
         main.cpp
         GameRenderer.cpp
         Game.cpp
+        UIManager.cpp
+        UIManager.h
 )
 
 target_link_libraries(Traffix PRIVATE sfml-graphics sfml-window sfml-system)

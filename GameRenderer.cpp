@@ -33,6 +33,10 @@ void GameRenderer::render() {
     window->display();
 }
 
+void GameRenderer::renderWorld() {
+    return;
+}
+
 
 void GameRenderer::handleEvents() {
     sf::Event event;

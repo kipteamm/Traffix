@@ -33,10 +33,8 @@ private:
     UIManager* uiManager;
 
     void renderWorld();
-    void renderUI();
 
     void handleEvents();
-
     void windowViewEvent(const sf::Event& event);
     void mouseClickEvent(const sf::Event& event);
     void mouseReleaseEvent(const sf::Event& event);

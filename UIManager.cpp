@@ -7,8 +7,9 @@
 #include <iostream>
 
 
-UIButton::UIButton(const sf::Vector2f &size, const sf::Font &font, const std::string &text) {
+UIButton::UIButton(const sf::Vector2f &size, const sf::Font &font, const std::string &text, const sf::Color &color) {
     shape.setSize(size);
+    shape.setFillColor(color);
     label.setFont(font);
     label.setString(text);
 }
@@ -16,6 +17,15 @@ UIButton::UIButton(const sf::Vector2f &size, const sf::Font &font, const std::st
 void UIButton::setPosition(const sf::Vector2f &pos) {
     shape.setPosition(pos);
     label.setPosition(pos);
+}
+
+bool UIButton::contains(const sf::Vector2f &pos) const {
+    return shape.getGlobalBounds().contains(pos);
+}
+
+void UIButton::draw(sf::RenderWindow &window) const {
+    window.draw(shape);
+    window.draw(label);
 }
 
 void UIButton::setOnClick(std::function<void(Game*)> action) {
@@ -44,11 +54,10 @@ void UIState::render(sf::RenderWindow &window) {
 DefaultUI::DefaultUI(const sf::Window &window, const sf::Font &font) {
     const sf::Vector2f buttonSize(40.f, 40.f);
 
-    UIButton roadButton(buttonSize, font, "R");
-    roadButton.setColor(sf::Color(192, 192, 192));
+    UIButton roadButton(buttonSize, font, "R", sf::Color(192, 192, 192));
 
     const sf::Vector2u windowSize = window.getSize();
-    const sf::Vector2f position(10.f, windowSize.y - buttonSize.y - 10.f);
+    const sf::Vector2f position(10.f, windowSize.y + buttonSize.y + 10.f);
     roadButton.setPosition(position);
 
     roadButton.setOnClick([](Game* game) {
@@ -62,18 +71,16 @@ DefaultUI::DefaultUI(const sf::Window &window, const sf::Font &font) {
 RoadBuildUI::RoadBuildUI(const sf::Window &window, const sf::Font &font) {
     const sf::Vector2f buttonSize(40.f, 40.f);
 
-    UIButton oneWayRoadButton(buttonSize, font, "1");
-    UIButton twoWayRoadButton(buttonSize, font, "2");
-    oneWayRoadButton.setColor(sf::Color(192, 192, 192));
-    twoWayRoadButton.setColor(sf::Color(192, 192, 192));
+    UIButton oneWayRoadButton(buttonSize, font, "1", sf::Color(192, 192, 192));
+    UIButton twoWayRoadButton(buttonSize, font, "2", sf::Color(192, 192, 192));
 
     const sf::Vector2u windowSize = window.getSize();
-    sf::Vector2f position(10.f, windowSize.y - buttonSize.y - 10.f);
+    sf::Vector2f position(10.f, windowSize.y + buttonSize.y + 10.f);
     oneWayRoadButton.setPosition(position);
 
     position.x = 60.f;
     position.y = windowSize.y - buttonSize.y - 10.f;
-    oneWayRoadButton.setPosition(position);
+    twoWayRoadButton.setPosition(position);
 
     buttons.push_back(oneWayRoadButton);
     buttons.push_back(twoWayRoadButton);

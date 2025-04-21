@@ -18,10 +18,9 @@ class Game;
 
 class UIButton {
 public:
-    UIButton(const sf::Vector2f& size, const sf::Font& font, const std::string& text);
+    explicit UIButton(const sf::Vector2f& size, const sf::Font& font, const std::string& text, const sf::Color &color);
 
     void setPosition(const sf::Vector2f& pos);
-    void setColor(const sf::Color& color);
     void setOnClick(std::function<void(Game*)> action);
     bool contains(const sf::Vector2f& pos) const;
     void draw(sf::RenderWindow& window) const;
@@ -48,10 +47,12 @@ protected:
 };
 
 class DefaultUI : public UIState {
+public:
     DefaultUI(const sf::Window &window, const sf::Font &font);
 };
 
 class RoadBuildUI : public UIState {
+public:
     RoadBuildUI(const sf::Window &window, const sf::Font &font);
 };
 

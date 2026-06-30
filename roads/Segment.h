@@ -1,24 +1,20 @@
 #ifndef TRAFFIX_SEGMENT_H
 #define TRAFFIX_SEGMENT_H
 
-#include <SFML/System/Vector2.hpp>
+#include <SFML/Graphics.hpp>
 
 
-class Segment {
+class Segment final : public sf::Drawable {
 public:
-    explicit Segment(sf::Vector2f start, sf::Vector2f end);
-    explicit Segment(sf::Vector2f start, sf::Vector2f end, sf::Vector2f curvePoint);
+    explicit Segment(sf::Vector2f start, sf::Vector2f end, sf::Vector2f curvePoint = {0, 0});
 
-    [[nodiscard]] sf::Vector2f& getStart() { return start; }
-    [[nodiscard]] sf::Vector2f& getEnd() { return end; }
-    [[nodiscard]] sf::Vector2f& getCurve() { return curvePoint; }
-    [[nodiscard]] bool isCurved() const { return curved; }
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
-    sf::Vector2f start;
-    sf::Vector2f end;
-    sf::Vector2f curvePoint;
-    bool curved = false;
+    sf::VertexArray mesh;
+
+    sf::Vector2f getBezierPoint(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;
+    sf::Vector2f getBezierNormal(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;
 };
 
 

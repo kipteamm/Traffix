@@ -36,19 +36,19 @@ private:
 
 class DefaultUI final : public UIState {
 public:
-    DefaultUI(const sf::Window &window, const sf::Font &font);
+    DefaultUI(const sf::Window &window);
 };
 
 
 class RoadBuildUI final : public UIState {
 public:
-    RoadBuildUI(const sf::Window &window, const sf::Font &font);
+    RoadBuildUI(const sf::Window &window);
 };
 
 
 class BuildingRoadUI final : public UIState {
 public:
-    BuildingRoadUI(const sf::Window &window, const sf::Font &font);
+    BuildingRoadUI(const sf::Window &window);
 };
 
 

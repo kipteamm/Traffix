@@ -1,7 +1,3 @@
-//
-// Created by kipteam on 4/6/25.
-//
-
 #include "Game.h"
 
 
@@ -47,13 +43,16 @@ void Game::handleEvents() {
                 const bool uiClick = this->gameRenderer->mouseClickEvent(event);
                 if (uiClick) break;
 
-                roadBuilder->addPoint(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
+                if (state == GameState::BuildingRoad) {
+                    roadBuilder->addPoint(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
 
-                if (roadBuilder->total() == 2 && roadBuilder->getMode() == STRAIGHT) {
-                    roadBuilder->buildSegment(*road);
-                } else if (roadBuilder->total() == 3 && roadBuilder->getMode() == CURVED) {
-                    roadBuilder->buildSegment(*road);
+                    if (roadBuilder->total() == 2 && roadBuilder->getMode() == STRAIGHT) {
+                        roadBuilder->buildSegment(*road);
+                    } else if (roadBuilder->total() == 3 && roadBuilder->getMode() == CURVED) {
+                        roadBuilder->buildSegment(*road);
+                    }
                 }
+
 
                 break;
             }
@@ -62,9 +61,16 @@ void Game::handleEvents() {
                 this->gameRenderer->mouseReleaseEvent(event);
                 break;
 
-            case sf::Event::MouseWheelMoved:
+            case sf::Event::MouseWheelScrolled:
                 this->gameRenderer->mouseWheelEvent(event);
                 break;
+
+            case sf::Event::MouseMoved: {
+                if (this->roadBuilder->total() == 0) break;
+
+                roadBuilder->setMousePosition(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
+                break;
+            }
 
             default: break;
         }

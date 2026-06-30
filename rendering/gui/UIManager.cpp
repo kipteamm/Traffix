@@ -5,15 +5,10 @@
 
 
 UIManager::UIManager(Game* game, sf::RenderWindow &window): window(window) {
-    if (!font.loadFromFile("../assets/fonts/Montserrat.ttf")) {
-        std::cerr << "Error loading font." << std::endl;
-        return;
-    }
-    
     this->game = game;
-    modes[GameState::Default] = std::make_unique<DefaultUI>(window, font);
-    modes[GameState::RoadBuildMenu] = std::make_unique<RoadBuildUI>(window, font);
-    modes[GameState::BuildingRoad] = std::make_unique<BuildingRoadUI>(window, font);
+    modes[GameState::Default] = std::make_unique<DefaultUI>(window);
+    modes[GameState::RoadBuildMenu] = std::make_unique<RoadBuildUI>(window);
+    modes[GameState::BuildingRoad] = std::make_unique<BuildingRoadUI>(window);
     
     active = modes[GameState::Default].get();
 }

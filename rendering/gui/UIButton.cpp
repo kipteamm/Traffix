@@ -1,11 +1,13 @@
 #include "UIButton.h"
 
+#include "../AssetManager.h"
 
-UIButton::UIButton(const sf::Vector2f &size, const sf::Font &font, const std::string &text, const sf::Color &color) {
+
+UIButton::UIButton(const sf::Vector2f &size, const std::string &text, const sf::Color &color) {
     shape.setSize(size);
     shape.setFillColor(color);
 
-    label.setFont(font);
+    label.setFont(AssetManager::getInstance().getFont());
     label.setString(text);
     label.setCharacterSize(16);
 

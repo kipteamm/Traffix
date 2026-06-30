@@ -17,7 +17,7 @@ public:
 
     void addSegment(std::unique_ptr<Segment> segment);
 
-    void render(sf::RenderWindow* window);
+    void render(sf::RenderWindow* window) const;
 
 private:
     std::vector<std::unique_ptr<Segment>> segments;

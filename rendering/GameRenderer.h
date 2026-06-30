@@ -17,6 +17,8 @@ class GameRenderer {
 public:
     explicit GameRenderer(Game* game, const std::shared_ptr<sf::RenderWindow>& window);
 
+    [[nodiscard]] sf::View& getCamera() { return camera; }
+
     void render();
 
     void resizeEvent(const sf::Event& event);

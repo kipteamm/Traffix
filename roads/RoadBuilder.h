@@ -24,9 +24,14 @@ public:
 
     void buildSegment(Road& road);
 
+    void setMousePosition(sf::Vector2f pos);
+    void renderPreview(sf::RenderWindow* window) const;
+
 private:
     std::vector<sf::Vector2f> points;
     RoadBuildMode mode = STRAIGHT;
+
+    sf::Vector2f currentMousePos;
 };
 
 

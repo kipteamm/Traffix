@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "../AssetManager.h"
+
 
 UIState::UIState(const UIAnchor anchor, const float paddingX, const float paddingY)
     : anchor(anchor), paddingX(paddingX), paddingY(paddingY) {}
@@ -56,12 +58,12 @@ void UIState::handleResize(const sf::Vector2u& size) {
 
 
 
-DefaultUI::DefaultUI(const sf::Window &window, const sf::Font &font)
+DefaultUI::DefaultUI(const sf::Window &window)
     : UIState(BOTTOM_LEFT, 50.f, 0)
 {
     const sf::Vector2f buttonSize(40.f, 40.f);
 
-    UIButton roadButton(buttonSize, font, "R", sf::Color(192, 192, 192));
+    UIButton roadButton(buttonSize, "R", sf::Color(192, 192, 192));
 
     const sf::Vector2u windowSize = window.getSize();
     const sf::Vector2f position(10.f, windowSize.y - buttonSize.y - 10.f);
@@ -78,13 +80,13 @@ DefaultUI::DefaultUI(const sf::Window &window, const sf::Font &font)
 }
 
 
-RoadBuildUI::RoadBuildUI(const sf::Window &window, const sf::Font &font)
+RoadBuildUI::RoadBuildUI(const sf::Window &window)
     : UIState(BOTTOM_LEFT, 50.f, 0)
 {
     const sf::Vector2f buttonSize(40.f, 40.f);
 
-    UIButton oneWayRoadButton(buttonSize, font, "1", sf::Color(192, 192, 192));
-    UIButton twoWayRoadButton(buttonSize, font, "2", sf::Color(192, 192, 192));
+    UIButton oneWayRoadButton(buttonSize, "1", sf::Color(192, 192, 192));
+    UIButton twoWayRoadButton(buttonSize, "2", sf::Color(192, 192, 192));
 
     oneWayRoadButton.setOnClick([](Game* game){
         std::cout << "One-way road selected!" << std::endl;
@@ -103,13 +105,13 @@ RoadBuildUI::RoadBuildUI(const sf::Window &window, const sf::Font &font)
 }
 
 
-BuildingRoadUI::BuildingRoadUI(const sf::Window& window, const sf::Font& font)
+BuildingRoadUI::BuildingRoadUI(const sf::Window& window)
     : UIState(BOTTOM_LEFT, 50.f, 0)
 {
     const sf::Vector2f buttonSize(40.f, 40.f);
 
-    UIButton straightRoadButton(buttonSize, font, "S", sf::Color(192, 192, 192));
-    UIButton curvedRoadButton(buttonSize, font, "C", sf::Color(192, 192, 192));
+    UIButton straightRoadButton(buttonSize, "S", sf::Color(192, 192, 192));
+    UIButton curvedRoadButton(buttonSize, "C", sf::Color(192, 192, 192));
 
     straightRoadButton.setOnClick([](Game* game){
         std::cout << "Straight road selected!" << std::endl;

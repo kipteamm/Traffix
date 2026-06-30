@@ -26,7 +26,6 @@ public:
 private:
     Game* game;
     sf::RenderWindow &window;
-    sf::Font font;
 
     std::unordered_map<GameState, std::unique_ptr<UIState>> modes;
     UIState* active = nullptr;

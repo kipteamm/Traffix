@@ -13,7 +13,7 @@ enum class GameState;
 
 class UIButton {
 public:
-    explicit UIButton(const sf::Vector2f& size, const sf::Font& font, const std::string& text, const sf::Color &color);
+    explicit UIButton(const sf::Vector2f& size, const std::string& text, const sf::Color &color);
 
     void setPosition(const sf::Vector2f& pos);
     sf::Vector2f getSize() const;

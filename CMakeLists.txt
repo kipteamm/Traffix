@@ -15,13 +15,13 @@ add_executable(Traffix
         main.cpp
         Game.cpp
         rendering/GameRenderer.cpp
+        rendering/AssetManager.cpp
         rendering/gui/UIManager.cpp
         rendering/gui/UIButton.cpp
         rendering/gui/UIState.cpp
         roads/RoadBuilder.cpp
         roads/Segment.cpp
         roads/Road.cpp
-        roads/Road.h
 )
 
 target_link_libraries(Traffix PRIVATE sfml-graphics sfml-window sfml-system)

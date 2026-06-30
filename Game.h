@@ -21,6 +21,8 @@ public:
     void setState(GameState state);
     GameState getState();
 
+    [[nodiscard]] RoadBuilder* getRoadBuilder() const { return roadBuilder.get(); }
+
     [[nodiscard]] Road* getRoad() const { return road; };
 
     void update();

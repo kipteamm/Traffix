@@ -16,13 +16,19 @@ void RoadBuilder::addPoint(const sf::Vector2f point) {
 }
 
 
+void RoadBuilder::setMode(const RoadBuildMode mode) {
+    this->mode = mode;
+}
+
+
+
 void RoadBuilder::buildSegment(Road& road) {
     std::unique_ptr<Segment> segment;
 
     if (points.size() == 2) {
         segment = std::make_unique<Segment>(points[0], points[1]);
     } else if (points.size() == 3) {
-        segment = std::make_unique<Segment>(points[0], points[1], points[2]);
+        segment = std::make_unique<Segment>(points[0], points[2], points[1]);
     } else {
         std::cerr << "Not enough points" << std::endl;
     }

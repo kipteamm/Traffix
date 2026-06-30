@@ -46,4 +46,10 @@ public:
 };
 
 
+class BuildingRoadUI final : public UIState {
+public:
+    BuildingRoadUI(const sf::Window &window, const sf::Font &font);
+};
+
+
 #endif //TRAFFIX_UISTATE_H

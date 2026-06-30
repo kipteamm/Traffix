@@ -101,3 +101,28 @@ RoadBuildUI::RoadBuildUI(const sf::Window &window, const sf::Font &font)
 
     this->handleResize(window.getSize());
 }
+
+
+BuildingRoadUI::BuildingRoadUI(const sf::Window& window, const sf::Font& font)
+    : UIState(BOTTOM_LEFT, 50.f, 0)
+{
+    const sf::Vector2f buttonSize(40.f, 40.f);
+
+    UIButton straightRoadButton(buttonSize, font, "S", sf::Color(192, 192, 192));
+    UIButton curvedRoadButton(buttonSize, font, "C", sf::Color(192, 192, 192));
+
+    straightRoadButton.setOnClick([](Game* game){
+        std::cout << "Straight road selected!" << std::endl;
+        game->getRoadBuilder()->setMode(STRAIGHT);
+    });
+
+    curvedRoadButton.setOnClick([](Game* game){
+        std::cout << "Curved road selected!" << std::endl;
+        game->getRoadBuilder()->setMode(CURVED);
+    });
+
+    buttons.push_back(straightRoadButton);
+    buttons.push_back(curvedRoadButton);
+
+    this->handleResize(window.getSize());
+}

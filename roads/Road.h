@@ -8,6 +8,9 @@
 #include "Segment.h"
 
 
+constexpr int CURVEPOINTS = 20;
+
+
 class Road {
 public:
     Road() = default;

@@ -13,7 +13,7 @@ UIManager::UIManager(Game* game, sf::RenderWindow &window): window(window) {
     this->game = game;
     modes[GameState::Default] = std::make_unique<DefaultUI>(window, font);
     modes[GameState::RoadBuildMenu] = std::make_unique<RoadBuildUI>(window, font);
-    modes[GameState::BuildingRoad] = std::make_unique<UIState>(BOTTOM_LEFT, 0, 0);
+    modes[GameState::BuildingRoad] = std::make_unique<BuildingRoadUI>(window, font);
     
     active = modes[GameState::Default].get();
 }

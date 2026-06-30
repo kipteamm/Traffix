@@ -49,11 +49,9 @@ void Game::handleEvents() {
 
                 roadBuilder->addPoint(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
 
-                if (roadBuilder->total() == 2) {
-                    // && straight mode is enabled
+                if (roadBuilder->total() == 2 && roadBuilder->getMode() == STRAIGHT) {
                     roadBuilder->buildSegment(*road);
-                } else if (roadBuilder->total() == 3) {
-                    // && curve mode is enabled
+                } else if (roadBuilder->total() == 3 && roadBuilder->getMode() == CURVED) {
                     roadBuilder->buildSegment(*road);
                 }
 

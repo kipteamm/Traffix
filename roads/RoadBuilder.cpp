@@ -1,6 +1,5 @@
 #include "RoadBuilder.h"
 
-#include <cassert>
 #include <iostream>
 #include <memory>
 
@@ -25,10 +24,20 @@ void RoadBuilder::setMode(const RoadBuildMode mode) {
 void RoadBuilder::buildSegment(Road& road) {
     std::unique_ptr<Segment> segment;
 
+    std::vector<LaneConfig> laneConfig;
+    laneConfig.push_back({3.4});
+
+    std::vector<MarkingConfig> markingConfig;
+    markingConfig.push_back({-1.5, SOLID});
+    markingConfig.push_back({1.5, SOLID});
+
     if (points.size() == 2) {
-        segment = std::make_unique<Segment>(points[0], points[1]);
+        auto start = points[0];
+        auto end = points[1];
+
+        segment = std::make_unique<Segment>(start, end, (start + end) / 2.0f, laneConfig, markingConfig);
     } else if (points.size() == 3) {
-        segment = std::make_unique<Segment>(points[0], points[2], points[1]);
+        segment = std::make_unique<Segment>(points[0], points[2], points[1], laneConfig, markingConfig);
     } else {
         std::cerr << "Not enough points" << std::endl;
     }

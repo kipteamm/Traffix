@@ -19,8 +19,8 @@ public:
     explicit UIState(UIAnchor anchor, float paddingX, float paddingY);
 
     void render(sf::RenderWindow& window);
-    void handleClick(sf::Vector2f mousePos, Game* game);
-    void handleResize(const sf::RenderWindow &window);
+    bool handleClick(sf::Vector2f mousePos, Game* game);
+    void handleResize(const sf::Vector2u& size);
 
     virtual ~UIState() = default;
 

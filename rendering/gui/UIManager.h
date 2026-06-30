@@ -21,7 +21,7 @@ public:
     void render() const;
 
     void handleResize() const;
-    void handleClick(sf::Vector2f mousePos) const;
+    bool handleClick(sf::Vector2f mousePos) const;
 
 private:
     Game* game;

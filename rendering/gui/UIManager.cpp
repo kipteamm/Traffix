@@ -36,12 +36,12 @@ void UIManager::render() const {
 
 void UIManager::handleResize() const {
     assert(active != nullptr && "UIManager does not have active UIState");
-    active->handleResize(window);
+    active->handleResize(window.getSize());
 }
 
 
 
-void UIManager::handleClick(const sf::Vector2f mousePos) const {
+bool UIManager::handleClick(const sf::Vector2f mousePos) const {
     assert(active != nullptr && "UIManager does not have active UIState");
-    active->handleClick(mousePos, game);
+    return active->handleClick(mousePos, game);
 }

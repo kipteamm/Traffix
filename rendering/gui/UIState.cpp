@@ -8,11 +8,14 @@ UIState::UIState(const UIAnchor anchor, const float paddingX, const float paddin
 
 
 
-void UIState::handleClick(const sf::Vector2f mousePos, Game* game) {
+bool UIState::handleClick(const sf::Vector2f mousePos, Game* game) {
     for (UIButton &button: buttons) {
         if (!button.contains(mousePos)) continue;
         button.onClick(game);
+        return true;
     }
+
+    return false;
 }
 
 
@@ -23,9 +26,7 @@ void UIState::render(sf::RenderWindow &window) {
 }
 
 
-void UIState::handleResize(const sf::RenderWindow &window) {
-    const auto size = window.getSize();
-
+void UIState::handleResize(const sf::Vector2u& size) {
     float currentX = 10.f;
     float currentY = 10.f;
 
@@ -72,6 +73,8 @@ DefaultUI::DefaultUI(const sf::Window &window, const sf::Font &font)
     });
 
     buttons.push_back(roadButton);
+
+    this->handleResize(window.getSize());
 }
 
 
@@ -95,4 +98,6 @@ RoadBuildUI::RoadBuildUI(const sf::Window &window, const sf::Font &font)
 
     buttons.push_back(oneWayRoadButton);
     buttons.push_back(twoWayRoadButton);
+
+    this->handleResize(window.getSize());
 }

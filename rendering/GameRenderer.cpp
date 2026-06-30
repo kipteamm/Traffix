@@ -30,15 +30,11 @@ void GameRenderer::render() {
     window->display();
 }
 
+
 void GameRenderer::renderWorld() {
-    if (game->getState() == GameState::BuildingRoad) {
-        const sf::Vertex line[] = {
-                sf::Vertex(sf::Vector2f(100, 100), sf::Color::White),
-                sf::Vertex(sf::Vector2f(400, 450), sf::Color::White)
-        };
-        window->draw(line, 2, sf::Lines);
-    }
+    game->getRoad()->render(window.get());
 }
+
 
 
 void GameRenderer::resizeEvent(const sf::Event& event) {
@@ -70,23 +66,21 @@ void GameRenderer::mouseWheelEvent(const sf::Event &event) {
     camera.move(offset);
 }
 
-void GameRenderer::mouseClickEvent(const sf::Event &event) {
+bool GameRenderer::mouseClickEvent(const sf::Event &event) {
     if (event.mouseButton.button == sf::Mouse::Button::Right) {
         dragging = true;
         dragStart = sf::Mouse::getPosition(*window);
-        return;
+        return true;
     }
 
     if (event.mouseButton.button == sf::Mouse::Button::Left) {
-        sf::Vector2i pixelPos = sf::Mouse::getPosition(*window);
-        sf::Vector2f uiPos = window->mapPixelToCoords(pixelPos, ui);
+        const sf::Vector2i pixelPos = sf::Mouse::getPosition(*window);
+        const sf::Vector2f uiPos = window->mapPixelToCoords(pixelPos, ui);
 
-        uiManager->handleClick(uiPos);
-
-        // You might also want to handle clicks on the world (camera view)
-        // sf::Vector2f worldPos = window->mapPixelToCoords(pixelPos, camera);
-        // e.g., if (game->getState() == GameState::BuildingRoad) { ... }
+        return uiManager->handleClick(uiPos);
     }
+
+    return false;
 }
 
 void GameRenderer::mouseReleaseEvent(const sf::Event &event) {

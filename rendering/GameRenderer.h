@@ -20,7 +20,7 @@ public:
     void render();
 
     void resizeEvent(const sf::Event& event);
-    void mouseClickEvent(const sf::Event& event);
+    [[nodiscard]] bool mouseClickEvent(const sf::Event& event);
     void mouseReleaseEvent(const sf::Event& event);
     void mouseWheelEvent(const sf::Event& event);
 
@@ -38,7 +38,6 @@ private:
     UIManager* uiManager;
 
     void renderWorld();
-
     void handleMouseDrag();
 };
 

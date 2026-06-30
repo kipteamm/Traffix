@@ -6,7 +6,8 @@
 
 
 Game::Game(const std::shared_ptr<sf::RenderWindow>& window) : window(window) {
-    gameRenderer = new GameRenderer(this, window);
+    gameRenderer = std::make_unique<GameRenderer>(this, window);
+    roadBuilder = std::make_unique<RoadBuilder>();
 }
 
 
@@ -42,9 +43,22 @@ void Game::handleEvents() {
                 this->gameRenderer->resizeEvent(event);
                 break;
 
-            case sf::Event::MouseButtonPressed:
-                this->gameRenderer->mouseClickEvent(event);
+            case sf::Event::MouseButtonPressed: {
+                const bool uiClick = this->gameRenderer->mouseClickEvent(event);
+                if (uiClick) break;
+
+                roadBuilder->addPoint(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
+
+                if (roadBuilder->total() == 2) {
+                    // && straight mode is enabled
+                    roadBuilder->buildSegment(*road);
+                } else if (roadBuilder->total() == 3) {
+                    // && curve mode is enabled
+                    roadBuilder->buildSegment(*road);
+                }
+
                 break;
+            }
 
             case sf::Event::MouseButtonReleased:
                 this->gameRenderer->mouseReleaseEvent(event);

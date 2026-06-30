@@ -4,6 +4,7 @@
 #include "SFML/Graphics.hpp"
 
 #include "rendering/GameRenderer.h"
+#include "roads/RoadBuilder.h"
 
 
 enum class GameState {
@@ -20,6 +21,8 @@ public:
     void setState(GameState state);
     GameState getState();
 
+    [[nodiscard]] Road* getRoad() const { return road; };
+
     void update();
     void render();
 
@@ -27,7 +30,11 @@ private:
     std::shared_ptr<sf::RenderWindow> window;
     GameState state = GameState::Default;
 
-    GameRenderer* gameRenderer;
+    std::unique_ptr<GameRenderer> gameRenderer;
+    std::unique_ptr<RoadBuilder> roadBuilder;
+
+    // TEMPORARY
+    Road* road = new Road;
 
     void handleEvents();
 };

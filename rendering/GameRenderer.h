@@ -5,8 +5,8 @@
 #ifndef GAMERENDERER_H
 #define GAMERENDERER_H
 
-#include "UIManager.h"
-#include "Game.h"
+#include "gui/UIManager.h"
+#include "../Game.h"
 
 
 class Game;
@@ -15,14 +15,19 @@ class UIManager;
 
 class GameRenderer {
 public:
-    explicit GameRenderer(Game* game, sf::RenderWindow* window);
+    explicit GameRenderer(Game* game, const std::shared_ptr<sf::RenderWindow>& window);
 
     void render();
+
+    void resizeEvent(const sf::Event& event);
+    void mouseClickEvent(const sf::Event& event);
+    void mouseReleaseEvent(const sf::Event& event);
+    void mouseWheelEvent(const sf::Event& event);
 
 private:
     Game* game;
 
-    sf::RenderWindow* window;
+    std::shared_ptr<sf::RenderWindow> window;
     sf::View camera;
     sf::View ui;
 
@@ -34,11 +39,6 @@ private:
 
     void renderWorld();
 
-    void handleEvents();
-    void windowViewEvent(const sf::Event& event);
-    void mouseClickEvent(const sf::Event& event);
-    void mouseReleaseEvent(const sf::Event& event);
-    void mouseWheelEvent(const sf::Event& event);
     void handleMouseDrag();
 };
 

@@ -13,10 +13,19 @@ find_package(SFML 2.6.2 REQUIRED COMPONENTS graphics window system)
 
 add_executable(Traffix
         main.cpp
-        GameRenderer.cpp
         Game.cpp
-        UIManager.cpp
-        UIManager.h
+        rendering/GameRenderer.cpp
+        rendering/gui/UIManager.cpp
+        rendering/gui/UIButton.cpp
+        rendering/gui/UIState.cpp
 )
 
 target_link_libraries(Traffix PRIVATE sfml-graphics sfml-window sfml-system)
+
+add_custom_command(TARGET Traffix POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:sfml-graphics>"
+        "$<TARGET_FILE:sfml-window>"
+        "$<TARGET_FILE:sfml-system>"
+        "$<TARGET_FILE_DIR:Traffix>"
+)

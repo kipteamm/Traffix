@@ -1,16 +1,15 @@
-#include <iostream>
 #include <SFML/Graphics.hpp>
 
 #include "Game.h"
 
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode::getDesktopMode(), "Traffix");
+    auto window = std::make_shared<sf::RenderWindow>(sf::VideoMode::getDesktopMode(), "Traffix");
+    auto game = std::make_unique<Game>(window);
 
-    Game game = Game(&window);
-    while (window.isOpen()) {
-        game.update();
-        game.render();
+    while (window->isOpen()) {
+        game->update();
+        game->render();
     }
 
     return 0;

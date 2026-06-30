@@ -1,33 +1,35 @@
-//
-// Created by kipteam on 4/6/25.
-//
-
 #ifndef GAME_H
 #define GAME_H
 
 #include "SFML/Graphics.hpp"
 
-#include "GameRenderer.h"
+#include "rendering/GameRenderer.h"
 
 
-enum class GameState {Default, RoadBuildMenu, BuildingRoad};
+enum class GameState {
+    Default, RoadBuildMenu, BuildingRoad
+};
 
 
 class GameRenderer;
 
 class Game {
 public:
-    explicit Game(sf::RenderWindow* window);
-
-    void update();
-    void render();
+    explicit Game(const std::shared_ptr<sf::RenderWindow>& window);
 
     void setState(GameState state);
     GameState getState();
 
+    void update();
+    void render();
+
 private:
-    GameRenderer* gameRenderer;
+    std::shared_ptr<sf::RenderWindow> window;
     GameState state = GameState::Default;
+
+    GameRenderer* gameRenderer;
+
+    void handleEvents();
 };
 
 

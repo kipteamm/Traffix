@@ -40,11 +40,18 @@ void Game::handleEvents() {
                 break;
 
             case sf::Event::MouseButtonPressed: {
+                // Release road point (right click)
+                if (event.mouseButton.button == sf::Mouse::Button::Right
+                    && state == GameState::BuildingRoad
+                    && roadBuilder->popPoint()) break;
+
                 const bool uiClick = this->gameRenderer->mouseClickEvent(event);
                 if (uiClick) break;
 
                 if (state == GameState::BuildingRoad) {
-                    roadBuilder->addPoint(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
+                    roadBuilder->addPoint(window->mapPixelToCoords(
+                        sf::Mouse::getPosition(*window), gameRenderer->getCamera()
+                    ));
 
                     if (roadBuilder->total() == 2 && roadBuilder->getMode() == STRAIGHT) {
                         roadBuilder->buildSegment(*road);
@@ -52,7 +59,6 @@ void Game::handleEvents() {
                         roadBuilder->buildSegment(*road);
                     }
                 }
-
 
                 break;
             }
@@ -68,7 +74,9 @@ void Game::handleEvents() {
             case sf::Event::MouseMoved: {
                 if (this->roadBuilder->total() == 0) break;
 
-                roadBuilder->setMousePosition(window->mapPixelToCoords(sf::Mouse::getPosition(*window)));
+                roadBuilder->setMousePosition(window->mapPixelToCoords(
+                    sf::Mouse::getPosition(*window), gameRenderer->getCamera()
+                ));
                 break;
             }
 

@@ -5,7 +5,6 @@
 #include "Road.h"
 
 
-
 namespace Scale {
     constexpr float PPM = 32.0f;
     constexpr float LANE_WIDTH_METERS = 3.5f;
@@ -43,6 +42,7 @@ Segment::Segment(
     this->generateMarkingsMesh(markings);
 }
 
+
 void Segment::precalculateDistances() {
     mDistances.resize(CURVEPOINTS + 1, 0.0f);
     float accumulated = 0.0f;
@@ -73,7 +73,6 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
         const float laneWidthPx = widthMeters * Scale::PPM;
         const float laneRightOffset = currentLeftOffset + laneWidthPx;
 
-        // Cache previous vertices to draw complete quads
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
@@ -88,15 +87,24 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
             sf::Vector2f rightPos = center + normal * laneRightOffset;
 
             if (i > 0) {
-                // Triangle 1 (Top-Left, Top-Right, Bottom-Left)
-                asphaltMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_START, prevV)));
-                asphaltMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_END, prevV)));
-                asphaltMesh.append(sf::Vertex(leftPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_START, v)));
+                // Determine the exact pixel center of the Asphalt chunk in the Atlas
+                const float atlasCenterU = (Atlas::ASPHALT_U_START + Atlas::ASPHALT_U_END) / 2.0f;
 
-                // Triangle 2 (Top-Right, Bottom-Right, Bottom-Left)
-                asphaltMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_END, prevV)));
-                asphaltMesh.append(sf::Vertex(rightPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_END, v)));
-                asphaltMesh.append(sf::Vertex(leftPos, sf::Color::White, sf::Vector2f(Atlas::ASPHALT_U_START, v)));
+                // Calculate path-aligned 1:1 UVs (No more world-aligned static background)
+                sf::Vector2f uvPrevLeft(atlasCenterU + currentLeftOffset, prevV);
+                sf::Vector2f uvPrevRight(atlasCenterU + laneRightOffset, prevV);
+                sf::Vector2f uvLeft(atlasCenterU + currentLeftOffset, v);
+                sf::Vector2f uvRight(atlasCenterU + laneRightOffset, v);
+
+                // Triangle 1
+                asphaltMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, uvPrevLeft));
+                asphaltMesh.append(sf::Vertex(prevRightPos, sf::Color::White, uvPrevRight));
+                asphaltMesh.append(sf::Vertex(leftPos, sf::Color::White, uvLeft));
+
+                // Triangle 2
+                asphaltMesh.append(sf::Vertex(prevRightPos, sf::Color::White, uvPrevRight));
+                asphaltMesh.append(sf::Vertex(rightPos, sf::Color::White, uvRight));
+                asphaltMesh.append(sf::Vertex(leftPos, sf::Color::White, uvLeft));
             }
 
             prevLeftPos = leftPos;
@@ -107,27 +115,30 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
     }
 }
 
+
 void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
     for (const auto& [offsetFromRoadCenterMeters, markingType] : markings) {
         float uStart = 0.0f, uEnd = 0.0f;
 
         if (markingType == NONE) continue;
 
+        const float halfMarkingWidthPx = 2.0f;
+
+        // Force exactly a 4-pixel texture grab to match the 4-pixel physical line width (1:1 ratio)
         if (markingType == SOLID) {
-            uStart = Atlas::SOLID_U_START;
-            uEnd = Atlas::SOLID_U_END;
+            float uCenter = (Atlas::SOLID_U_START + Atlas::SOLID_U_END) / 2.0f;
+            uStart = uCenter - halfMarkingWidthPx;
+            uEnd   = uCenter + halfMarkingWidthPx;
         } else if (markingType == DASHED) {
-            uStart = Atlas::DASHED_U_START;
-            uEnd = Atlas::DASHED_U_END;
+            float uCenter = (Atlas::DASHED_U_START + Atlas::DASHED_U_END) / 2.0f;
+            uStart = uCenter - halfMarkingWidthPx;
+            uEnd   = uCenter + halfMarkingWidthPx;
         }
 
         const float centerOffsetPx = offsetFromRoadCenterMeters * Scale::PPM;
-        const float halfMarkingWidthPx = 2.0f;
-
         const float leftLineOffset = centerOffsetPx - halfMarkingWidthPx;
         const float rightLineOffset = centerOffsetPx + halfMarkingWidthPx;
 
-        // Variables to store the previous step's data
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
@@ -142,18 +153,17 @@ void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
             sf::Vector2f rightPos = center + normal * rightLineOffset;
 
             if (i > 0) {
-                // Triangle 1 (Top-Left, Top-Right, Bottom-Left)
+                // Triangle 1
                 markingsMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, sf::Vector2f(uStart, prevV)));
                 markingsMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(uEnd, prevV)));
                 markingsMesh.append(sf::Vertex(leftPos, sf::Color::White, sf::Vector2f(uStart, v)));
 
-                // Triangle 2 (Top-Right, Bottom-Right, Bottom-Left)
+                // Triangle 2
                 markingsMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(uEnd, prevV)));
                 markingsMesh.append(sf::Vertex(rightPos, sf::Color::White, sf::Vector2f(uEnd, v)));
                 markingsMesh.append(sf::Vertex(leftPos, sf::Color::White, sf::Vector2f(uStart, v)));
             }
 
-            // Cache current vertices for the next loop iteration
             prevLeftPos = leftPos;
             prevRightPos = rightPos;
             prevV = v;
@@ -167,6 +177,7 @@ sf::Vector2f Segment::getBezierPoint(const sf::Vector2f p0, const sf::Vector2f p
     return u * u * p0 + 2.0f * u * t * p1 + t * t * p2;
 }
 
+
 sf::Vector2f Segment::getBezierNormal(const sf::Vector2f p0, const sf::Vector2f p1, const sf::Vector2f p2, const float t) const {
     sf::Vector2f tangent = 2.0f * (1.0f - t) * (p1 - p0) + 2.0f * t * (p2 - p1);
     const float length = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
@@ -175,6 +186,7 @@ sf::Vector2f Segment::getBezierNormal(const sf::Vector2f p0, const sf::Vector2f 
     }
     return sf::Vector2f(-tangent.y, tangent.x);
 }
+
 
 void Segment::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     states.texture = &AssetManager::getInstance().getRoadTexture();

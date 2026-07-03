@@ -18,6 +18,7 @@ public:
 
     void addPoint(sf::Vector2f point);
     [[nodiscard]] int total() const { return points.size(); }
+    [[nodiscard]] bool popPoint();
 
     void setMode(RoadBuildMode mode);
     [[nodiscard]] RoadBuildMode getMode() const { return mode; }

@@ -15,6 +15,15 @@ void RoadBuilder::addPoint(const sf::Vector2f point) {
 }
 
 
+bool RoadBuilder::popPoint() {
+    if (points.empty()) return false;
+
+    points.pop_back();
+    return true;
+}
+
+
+
 void RoadBuilder::setMode(const RoadBuildMode mode) {
     this->mode = mode;
 }
@@ -31,20 +40,25 @@ void RoadBuilder::buildSegment(Road& road) {
     markingConfig.push_back({-1.5, SOLID});
     markingConfig.push_back({1.5, SOLID});
 
+    sf::Vector2f end;
+
     if (points.size() == 2) {
         auto start = points[0];
-        auto end = points[1];
+        end = points[1];
 
         segment = std::make_unique<Segment>(start, end, (start + end) / 2.0f, laneConfig, markingConfig);
     } else if (points.size() == 3) {
-        segment = std::make_unique<Segment>(points[0], points[2], points[1], laneConfig, markingConfig);
+        end = points[2];
+
+        segment = std::make_unique<Segment>(points[0], end, points[1], laneConfig, markingConfig);
     } else {
         std::cerr << "Not enough points" << std::endl;
     }
 
-    points.clear();
-
     road.addSegment(std::move(segment));
+
+    points.clear();
+    points.push_back(end);
 }
 
 
@@ -82,7 +96,7 @@ void RoadBuilder::renderPreview(sf::RenderWindow* window) const {
         sf::VertexArray curve(sf::LineStrip, CURVEPOINTS);
 
         for (int i = 0; i < CURVEPOINTS; ++i) {
-            const float t = static_cast<float>(i) / (30 - 1);
+            const float t = static_cast<float>(i) / (CURVEPOINTS - 1);
             const float u = 1.f - t;
             const sf::Vector2f point = (u * u * p0) + (2.f * u * t * p1) + (t * t * p2);
 

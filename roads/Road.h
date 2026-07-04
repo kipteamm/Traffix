@@ -16,6 +16,7 @@ public:
     Road() = default;
 
     void addSegment(std::unique_ptr<Segment> segment);
+    [[nodiscard]] const std::vector<std::unique_ptr<Segment>>& getSegments() const { return segments; }
     [[nodiscard]] Segment* getLastSegment() const;
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;

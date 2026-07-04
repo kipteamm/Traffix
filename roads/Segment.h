@@ -5,6 +5,13 @@
 #include <optional>
 
 
+namespace Scale {
+    constexpr float PPM = 32.0f;
+    constexpr float LANE_WIDTH_METERS = 3.5f;
+    constexpr float LANE_WIDTH_PX = LANE_WIDTH_METERS * PPM;
+}
+
+
 enum MarkingType {
     NONE, SOLID, DASHED
 };
@@ -25,15 +32,15 @@ class Segment {
 public:
     explicit Segment(sf::Vector2f start, sf::Vector2f end, sf::Vector2f curvePoint,
         const std::vector<LaneConfig>& lanes,
-        const std::vector<MarkingConfig>& markings,
-        std::optional<sf::Vector2f> customStartNormal,
-        std::optional<sf::Vector2f> customEndNormal
+        const std::vector<MarkingConfig>& markings
     );
 
-    [[nodiscard]] const sf::Vector2f& getCurvePoint() const { return curvePoint; }
+    [[nodiscard]] const sf::Vector2f& getStart() const { return start; }
     [[nodiscard]] const sf::Vector2f& getEnd() const { return end; }
+    [[nodiscard]] const sf::Vector2f& getCurvePoint() const { return curvePoint; }
 
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomStartNormal() const { return customStartNormal; }
+    [[nodiscard]] const std::optional<sf::Vector2f>& getCustomEndNormal() const { return customEndNormal; }
 
     [[nodiscard]] const sf::VertexArray& getAsphaltMesh() const { return asphaltMesh; }
     [[nodiscard]] const sf::VertexArray& getMarkingsMesh() const { return markingsMesh; }

@@ -6,14 +6,18 @@
 #include <cmath>
 
 
+// Snapping radius in pixels
+constexpr float SNAPPING_DISTANCE = 30.f;
+
+
 RoadBuilder::RoadBuilder() {
     // At most 3 points (start, curve, end)
     points.reserve(3);
 }
 
 
-void RoadBuilder::addPoint(const sf::Vector2f point) {
-    points.push_back(std::move(point));
+void RoadBuilder::addPoint() {
+    points.push_back(std::move(currentMousePos));
 }
 
 
@@ -26,13 +30,13 @@ bool RoadBuilder::popPoint() {
 
 
 
-void RoadBuilder::setMode(const RoadBuildMode mode) {
-    this->mode = mode;
+void RoadBuilder::setMode(const RoadBuildMode newMode) {
+    this->mode = newMode;
 }
 
 
 sf::Vector2f calculateMiterNormal(const sf::Vector2f tangentA, const sf::Vector2f tangentB) {
-    // 1. Get the average tangent vector
+    // Get the average tangent vector
     sf::Vector2f avgTangent = tangentA + tangentB;
 
     // Handle perfectly flat/collinear or 180-degree turn edge-cases safely
@@ -42,10 +46,10 @@ sf::Vector2f calculateMiterNormal(const sf::Vector2f tangentA, const sf::Vector2
 
     avgTangent /= len;
 
-    // 2. Turn the average tangent into a normal vector (-y, x)
+    // Turn the average tangent into a normal vector (-y, x)
     sf::Vector2f miterNormal(-avgTangent.y, avgTangent.x);
 
-    // 3. Scale the miter width based on the angle to prevent squeezing/pinching
+    // Scale the miter width based on the angle to prevent squeezing/pinching
     const sf::Vector2f normalA(-tangentA.y, tangentA.x);
     const float dot = miterNormal.x * normalA.x + miterNormal.y * normalA.y;
 
@@ -67,101 +71,196 @@ void RoadBuilder::buildSegment(Road& road) {
     };
 
     // Points
-    const sf::Vector2f p0 = points[0];
-    const sf::Vector2f p2 = (points.size() == 2) ? points[1] : points[2];
-    const sf::Vector2f p1 = (points.size() == 2) ? (p0 + p2) / 2.0f : points[1];
+    const SnapPoint& p0 = points[0];
+    const SnapPoint& p2 = (points.size() == 2) ? points[1] : points[2];
+    const sf::Vector2f p1 = (points.size() == 2) ? (p0.position + p2.position) / 2.0f : points[1].position;
 
-    // Connectivity
-    std::optional<sf::Vector2f> startNormal = std::nullopt;
-    std::optional<sf::Vector2f> endNormal = std::nullopt;
+    auto segment = std::make_unique<Segment>(
+        p0.position, p2.position, p1,
+        laneConfig, markingConfig
+    );
 
-    Segment* lastSegment = road.getLastSegment();
-    if (lastSegment != nullptr) {
-        // Calculate ending tangent of previous segment (at t = 1.0)
-        // Derivative of Bezier: B'(t) = 2(1-t)(p1-p0) + 2t(p2-p1)
-        // For t = 1.0, B'(1) = 2 * (p2 - p1)
-        const sf::Vector2f lastP1 = lastSegment->getCurvePoint();
-        const sf::Vector2f lastP2 = lastSegment->getEnd();
-        sf::Vector2f tangentA = lastP2 - lastP1;
-
-        const float lenA = std::sqrt(tangentA.x * tangentA.x + tangentA.y * tangentA.y);
-        if (lenA != 0) tangentA /= lenA;
-
-        // Calculate starting tangent of our new segment (at t = 0.0)
-        // B'(0) = 2 * (p1 - p0)
-        sf::Vector2f tangentB = p1 - p0;
-        const float lenB = std::sqrt(tangentB.x * tangentB.x + tangentB.y * tangentB.y);
-        if (lenB != 0) tangentB /= lenB;
-
-        // Calculate unified joint normal vector
-        sf::Vector2f miter = calculateMiterNormal(tangentA, tangentB);
-
-        startNormal = miter;
-
-        lastSegment->updateNormals(
-            lastSegment->getCustomStartNormal(),
-            miter,
-            laneConfig,
-            markingConfig
+    if (p0.snapped && p0.targetSegment != nullptr) {
+        connect(
+            p0.targetSegment, true,
+            segment.get(), false,
+            laneConfig, markingConfig
+        );
+    }
+    if (p2.snapped && p2.targetSegment != nullptr) {
+        connect(
+            p2.targetSegment, false,
+            segment.get(), true,
+            laneConfig, markingConfig
         );
     }
 
-
-    auto segment = std::make_unique<Segment>(
-        p0, p2, p1,
-        laneConfig, markingConfig,
-        startNormal, endNormal
-    );
-
-    road.addSegment(std::move(segment));
-
     points.clear();
-    points.push_back(p2);
+
+    currentMousePos.snapped = true;
+    currentMousePos.position = p2.position;
+    currentMousePos.targetSegment = segment.get();
+
+    points.push_back(currentMousePos);
+
+    // Only transfer owner ship by the end of function
+    road.addSegment(std::move(segment));
 }
 
 
-void RoadBuilder::setMousePosition(const sf::Vector2f pos) {
-    currentMousePos = pos;
+void RoadBuilder::setMousePosition(const sf::Vector2f pos, const Road& road) {
+    const auto point = findSnapTarget(road, pos);
+
+    if (point.snapped) {
+        currentMousePos = point;
+    } else {
+        currentMousePos = {false, pos};
+    }
 }
 
 
 void RoadBuilder::renderPreview(sf::RenderWindow* window) const {
-    if (points.size() < 1) return;
+    if (points.empty()) return;
 
-    const sf::Color previewColor(255, 255, 255, 128);
+    // Clear previous frame data without freeing the underlying capacity
+    m_previewMesh.clear();
+    m_leftOutline.clear();
+    m_rightOutline.clear();
 
-    if (mode == STRAIGHT && points.size() == 1) {
-        const sf::Vertex line[] = {
-            sf::Vertex(points[0], previewColor),
-            sf::Vertex(currentMousePos, previewColor)
-        };
-        window->draw(line, 2, sf::Lines);
+    const sf::Color fillCc(255, 255, 255, 60);
+    const sf::Color outlineColor(255, 255, 255, 150);
 
-        return;
-    }
+    // Resolve control points
+    const sf::Vector2f p0 = points[0].position;
+    const sf::Vector2f p1 = (mode == STRAIGHT) ? (p0 + currentMousePos.position) / 2.0f
+                    : (points.size() == 1 ? currentMousePos.position : points[1].position);
+    const sf::Vector2f p2 = currentMousePos.position;
 
-    if (mode == CURVED) {
-        const sf::Vector2f p0 = points[0];
-        const sf::Vector2f p2 = currentMousePos;
+    // Match physical width mapping
+    const float halfWidthPx = (3.4f * Scale::PPM) / 2.0f;
 
-        sf::Vector2f p1;
-        if (points.size() == 1) {
-            p1 = currentMousePos;
-        } else if (points.size() == 2) {
-            p1 = points[1];
+    sf::Vector2f prevLeftPos;
+    sf::Vector2f prevRightPos;
+
+    // Single mathematical pass for meshes and outlines
+    for (int i = 0; i <= CURVEPOINTS; ++i) {
+        float t = static_cast<float>(i) / CURVEPOINTS;
+
+        // Inline Bezier point/normal logic to maximize cache locality
+        const float u = 1.0f - t;
+        sf::Vector2f center = u * u * p0 + 2.0f * u * t * p1 + t * t * p2;
+
+        sf::Vector2f tangent = 2.0f * (1.0f - t) * (p1 - p0) + 2.0f * t * (p2 - p1);
+        const float length = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+        sf::Vector2f normal = (length != 0.0f) ? sf::Vector2f(-tangent.y / length, tangent.x / length)
+                                               : sf::Vector2f(0.0f, 0.0f);
+
+        sf::Vector2f leftPos  = center - normal * halfWidthPx;
+        sf::Vector2f rightPos = center + normal * halfWidthPx;
+
+        // Construct triangles directly for the fill mesh
+        if (i > 0) {
+            m_previewMesh.append(sf::Vertex(prevLeftPos, fillCc));
+            m_previewMesh.append(sf::Vertex(prevRightPos, fillCc));
+            m_previewMesh.append(sf::Vertex(leftPos, fillCc));
+
+            m_previewMesh.append(sf::Vertex(prevRightPos, fillCc));
+            m_previewMesh.append(sf::Vertex(rightPos, fillCc));
+            m_previewMesh.append(sf::Vertex(leftPos, fillCc));
         }
 
-        sf::VertexArray curve(sf::LineStrip, CURVEPOINTS);
+        // Populate outline strip points
+        m_leftOutline.append(sf::Vertex(leftPos, outlineColor));
+        m_rightOutline.append(sf::Vertex(rightPos, outlineColor));
 
-        for (int i = 0; i < CURVEPOINTS; ++i) {
-            const float t = static_cast<float>(i) / (CURVEPOINTS - 1);
-            const float u = 1.f - t;
-            const sf::Vector2f point = (u * u * p0) + (2.f * u * t * p1) + (t * t * p2);
+        prevLeftPos = leftPos;
+        prevRightPos = rightPos;
+    }
 
-            curve[i].position = point;
-            curve[i].color = previewColor;
+    if (points[0].snapped) {
+        sf::CircleShape snapIndicator(5);
+        snapIndicator.setFillColor(sf::Color::White);
+        snapIndicator.setPosition(points[0].position.x - 5, points[0].position.y - 5);
+        window->draw(snapIndicator);
+    }
+    if (currentMousePos.snapped) {
+        sf::CircleShape snapIndicator(5);
+        snapIndicator.setFillColor(sf::Color::White);
+        snapIndicator.setPosition(currentMousePos.position.x - 5, currentMousePos.position.y - 5);
+        window->draw(snapIndicator);
+    }
+
+    window->draw(m_previewMesh);
+    window->draw(m_leftOutline);
+    window->draw(m_rightOutline);
+}
+
+
+SnapPoint RoadBuilder::findSnapTarget(const Road& road, const sf::Vector2f mousePos) {
+    float closestDist = SNAPPING_DISTANCE;
+
+    SnapPoint snap;
+
+    for (const auto& segment : road.getSegments()) {
+        const sf::Vector2f startPos = segment->getStart();
+        const float distToStart = std::sqrt(std::pow(mousePos.x - startPos.x, 2) + std::pow(mousePos.y - startPos.y, 2));
+
+        if (distToStart < closestDist) {
+            closestDist = distToStart;
+            snap.snapped = true;
+            snap.position = startPos;
+            snap.targetSegment = segment.get();
+
+            // Tangent at t=0 is 2*(p1 - p0). Normalized:
+            // sf::Vector2f tangent = segment->getCurvePoint() - startPos;
+            // float len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+            // snap.tangent = (len != 0.0f) ? tangent / len : sf::Vector2f(0.f, 0.f);
         }
 
-        window->draw(curve);
+        const sf::Vector2f endPos = segment->getEnd();
+        const float distToEnd = std::sqrt(std::pow(mousePos.x - endPos.x, 2) + std::pow(mousePos.y - endPos.y, 2));
+
+        if (distToEnd < closestDist) {
+            closestDist = distToEnd;
+            snap.snapped = true;
+            snap.position = endPos;
+            snap.targetSegment = segment.get();
+
+            // Tangent at t=1 is 2*(p2 - p1). Normalized:
+            // sf::Vector2f tangent = endPos - segment->getCurvePoint();
+            // float len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+            // snap.tangent = (len != 0.0f) ? tangent / len : sf::Vector2f(0.f, 0.f);
+        }
     }
+
+    return snap;
+}
+
+
+void RoadBuilder::connect(Segment* segmentA, const bool segmentAend, Segment* segmentB, const bool segmentBend, const std::vector<LaneConfig>& lanes, const std::vector<MarkingConfig>& markings) {
+    if (segmentA == segmentB) return;
+
+    sf::Vector2f tangentA = segmentAend ? (segmentA->getEnd() - segmentA->getCurvePoint())
+                                      : (segmentA->getStart() - segmentA->getCurvePoint());
+    float lenA = std::hypot(tangentA.x, tangentA.y);
+
+    if (lenA != 0.0f) tangentA /= lenA;
+    if (!segmentAend) tangentA = -tangentA;
+
+    sf::Vector2f tangentB = segmentBend ? (segmentB->getCurvePoint() - segmentB->getEnd())
+                                      : (segmentB->getCurvePoint() - segmentB->getStart());
+    const float lenB = std::hypot(tangentB.x, tangentB.y);
+
+    if (lenB != 0.0f) tangentB /= lenB;
+    if (segmentBend) tangentB = -tangentB;
+
+    const sf::Vector2f miter = calculateMiterNormal(tangentA, tangentB);
+
+    const std::optional<sf::Vector2f> startA = segmentAend ? segmentA->getCustomStartNormal() : miter;
+    const std::optional<sf::Vector2f> endA   = segmentAend ? miter : segmentA->getCustomEndNormal();
+    segmentA->updateNormals(startA, endA, lanes, markings);
+
+    const std::optional<sf::Vector2f> startB = segmentBend ? segmentB->getCustomStartNormal() : miter;
+    const std::optional<sf::Vector2f> endB   = segmentBend ? miter : segmentB->getCustomEndNormal();
+    segmentB->updateNormals(startB, endB, lanes, markings);
 }

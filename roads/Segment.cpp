@@ -5,13 +5,6 @@
 #include "Road.h"
 
 
-namespace Scale {
-    constexpr float PPM = 32.0f;
-    constexpr float LANE_WIDTH_METERS = 3.5f;
-    constexpr float LANE_WIDTH_PX = LANE_WIDTH_METERS * PPM;
-}
-
-
 namespace Atlas {
     // Asphalt: Pixels 0 to 256 (256px chunk)
     constexpr float ASPHALT_U_START = 0.0f;
@@ -32,10 +25,9 @@ namespace Atlas {
 Segment::Segment(
     const sf::Vector2f start, const sf::Vector2f end, const sf::Vector2f curvePoint,
     const std::vector<LaneConfig>& lanes,
-    const std::vector<MarkingConfig>& markings,
-    const std::optional<sf::Vector2f> customStartNormal,
-    const std::optional<sf::Vector2f> customEndNormal)
-        : start(start), end(end), curvePoint(curvePoint), customStartNormal(customStartNormal), customEndNormal(customEndNormal)
+    const std::vector<MarkingConfig>& markings
+)
+        : start(start), end(end), curvePoint(curvePoint)
 {
     asphaltMesh.setPrimitiveType(sf::Triangles);
     markingsMesh.setPrimitiveType(sf::Triangles);

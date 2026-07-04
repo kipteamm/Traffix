@@ -1,6 +1,6 @@
+#include <optional>
 #include <cmath>
 
-#include "../rendering/AssetManager.h"
 #include "Segment.h"
 #include "Road.h"
 
@@ -24,14 +24,18 @@ namespace Atlas {
     // Dashed Line: Pixels 288 to 320 (32px chunk)
     constexpr float DASHED_U_START  = 288.0f;
     constexpr float DASHED_U_END    = 320.0f;
+
+    constexpr float CENTER_U = (ASPHALT_U_START + ASPHALT_U_END) / 2.0f;
 }
 
 
 Segment::Segment(
     const sf::Vector2f start, const sf::Vector2f end, const sf::Vector2f curvePoint,
     const std::vector<LaneConfig>& lanes,
-    const std::vector<MarkingConfig>& markings)
-        : start(start), end(end), curvePoint(curvePoint)
+    const std::vector<MarkingConfig>& markings,
+    const std::optional<sf::Vector2f> customStartNormal,
+    const std::optional<sf::Vector2f> customEndNormal)
+        : start(start), end(end), curvePoint(curvePoint), customStartNormal(customStartNormal), customEndNormal(customEndNormal)
 {
     asphaltMesh.setPrimitiveType(sf::Triangles);
     markingsMesh.setPrimitiveType(sf::Triangles);
@@ -41,6 +45,19 @@ Segment::Segment(
     this->generateAsphaltMesh(lanes);
     this->generateMarkingsMesh(markings);
 }
+
+
+void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const std::optional<sf::Vector2f> endNormal, const std::vector<LaneConfig>& lanes, const std::vector<MarkingConfig>& markings) {
+    customStartNormal = startNormal;
+    customEndNormal = endNormal;
+
+    asphaltMesh.clear();
+    markingsMesh.clear();
+
+    generateAsphaltMesh(lanes);
+    generateMarkingsMesh(markings);
+}
+
 
 
 void Segment::precalculateDistances() {
@@ -64,7 +81,6 @@ void Segment::precalculateDistances() {
 
 void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
     float totalWidthPx = 0.0f;
-
     for (const auto& [widthMeters] : lanes) totalWidthPx += widthMeters * Scale::PPM;
 
     float currentLeftOffset = -totalWidthPx / 2.0f;
@@ -80,21 +96,32 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
         for (int i = 0; i <= CURVEPOINTS; ++i) {
             float t = static_cast<float>(i) / CURVEPOINTS;
             sf::Vector2f center = getBezierPoint(start, curvePoint, end, t);
-            sf::Vector2f normal = getBezierNormal(start, curvePoint, end, t);
+
+            sf::Vector2f baseNormal = getBezierNormal(start, curvePoint, end, t); // Keep track of base normal length (1.0)
+            sf::Vector2f normal = baseNormal;
+
+            float uScale = 1.0f; // Default scale factor
+
+            if (i == 0 && customStartNormal.has_value()) {
+                normal = customStartNormal.value();
+                // The length of the miter normal dictates the scale factor
+                uScale = std::sqrt(normal.x * normal.x + normal.y * normal.y);
+            } else if (i == CURVEPOINTS && customEndNormal.has_value()) {
+                normal = customEndNormal.value();
+                uScale = std::sqrt(normal.x * normal.x + normal.y * normal.y);
+            }
+
             float v = mDistances[i];
 
             sf::Vector2f leftPos  = center + normal * currentLeftOffset;
             sf::Vector2f rightPos = center + normal * laneRightOffset;
 
             if (i > 0) {
-                // Determine the exact pixel center of the Asphalt chunk in the Atlas
-                const float atlasCenterU = (Atlas::ASPHALT_U_START + Atlas::ASPHALT_U_END) / 2.0f;
-
-                // Calculate path-aligned 1:1 UVs (No more world-aligned static background)
-                sf::Vector2f uvPrevLeft(atlasCenterU + currentLeftOffset, prevV);
-                sf::Vector2f uvPrevRight(atlasCenterU + laneRightOffset, prevV);
-                sf::Vector2f uvLeft(atlasCenterU + currentLeftOffset, v);
-                sf::Vector2f uvRight(atlasCenterU + laneRightOffset, v);
+                // Scale the U coordinates relative to the center line mapping offset based on uScale
+                sf::Vector2f uvPrevLeft(Atlas::CENTER_U + (currentLeftOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
+                sf::Vector2f uvPrevRight(Atlas::CENTER_U + (laneRightOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
+                sf::Vector2f uvLeft(Atlas::CENTER_U + (currentLeftOffset * uScale), v);
+                sf::Vector2f uvRight(Atlas::CENTER_U + (laneRightOffset * uScale), v);
 
                 // Triangle 1
                 asphaltMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, uvPrevLeft));
@@ -124,7 +151,6 @@ void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
 
         const float halfMarkingWidthPx = 2.0f;
 
-        // Force exactly a 4-pixel texture grab to match the 4-pixel physical line width (1:1 ratio)
         if (markingType == SOLID) {
             float uCenter = (Atlas::SOLID_U_START + Atlas::SOLID_U_END) / 2.0f;
             uStart = uCenter - halfMarkingWidthPx;
@@ -146,7 +172,17 @@ void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
         for (int i = 0; i <= CURVEPOINTS; ++i) {
             float t = static_cast<float>(i) / CURVEPOINTS;
             sf::Vector2f center = getBezierPoint(start, curvePoint, end, t);
+
+            // Base normal fallback
             sf::Vector2f normal = getBezierNormal(start, curvePoint, end, t);
+
+            // Miter override injections
+            if (i == 0 && customStartNormal.has_value()) {
+                normal = customStartNormal.value();
+            } else if (i == CURVEPOINTS && customEndNormal.has_value()) {
+                normal = customEndNormal.value();
+            }
+
             float v = mDistances[i];
 
             sf::Vector2f leftPos  = center + normal * leftLineOffset;
@@ -185,12 +221,4 @@ sf::Vector2f Segment::getBezierNormal(const sf::Vector2f p0, const sf::Vector2f 
         tangent /= length;
     }
     return sf::Vector2f(-tangent.y, tangent.x);
-}
-
-
-void Segment::draw(sf::RenderTarget& target, sf::RenderStates states) const {
-    states.texture = &AssetManager::getInstance().getRoadTexture();
-
-    target.draw(asphaltMesh, states);
-    target.draw(markingsMesh, states);
 }

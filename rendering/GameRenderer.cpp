@@ -32,7 +32,7 @@ void GameRenderer::render() {
 
 
 void GameRenderer::renderWorld() {
-    game->getRoad()->render(window.get());
+    window->draw(*game->getRoad());
     game->getRoadBuilder()->renderPreview(window.get());
 }
 

@@ -11,13 +11,14 @@
 constexpr int CURVEPOINTS = 20;
 
 
-class Road {
+class Road final : public sf::Drawable {
 public:
     Road() = default;
 
     void addSegment(std::unique_ptr<Segment> segment);
+    [[nodiscard]] Segment* getLastSegment() const;
 
-    void render(sf::RenderWindow* window) const;
+    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
     std::vector<std::unique_ptr<Segment>> segments;

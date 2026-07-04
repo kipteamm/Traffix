@@ -2,6 +2,7 @@
 #define TRAFFIX_SEGMENT_H
 
 #include <SFML/Graphics.hpp>
+#include <optional>
 
 
 enum MarkingType {
@@ -20,19 +21,38 @@ struct MarkingConfig {
 };
 
 
-class Segment final : public sf::Drawable {
+class Segment {
 public:
     explicit Segment(sf::Vector2f start, sf::Vector2f end, sf::Vector2f curvePoint,
         const std::vector<LaneConfig>& lanes,
-        const std::vector<MarkingConfig>& markings
+        const std::vector<MarkingConfig>& markings,
+        std::optional<sf::Vector2f> customStartNormal,
+        std::optional<sf::Vector2f> customEndNormal
     );
 
-    void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
+    [[nodiscard]] const sf::Vector2f& getCurvePoint() const { return curvePoint; }
+    [[nodiscard]] const sf::Vector2f& getEnd() const { return end; }
+
+    [[nodiscard]] const std::optional<sf::Vector2f>& getCustomStartNormal() const { return customStartNormal; }
+
+    [[nodiscard]] const sf::VertexArray& getAsphaltMesh() const { return asphaltMesh; }
+    [[nodiscard]] const sf::VertexArray& getMarkingsMesh() const { return markingsMesh; }
+    [[nodiscard]] sf::FloatRect getBounds() const { return asphaltMesh.getBounds(); }
+
+    void updateNormals(
+        std::optional<sf::Vector2f> startNormal,
+        std::optional<sf::Vector2f> endNormal,
+        const std::vector<LaneConfig>& lanes,
+        const std::vector<MarkingConfig>& markings
+    );
 
 private:
     sf::Vector2f start;
     sf::Vector2f end;
     sf::Vector2f curvePoint;
+
+    std::optional<sf::Vector2f> customStartNormal;
+    std::optional<sf::Vector2f> customEndNormal;
 
     sf::VertexArray asphaltMesh;
     sf::VertexArray markingsMesh;

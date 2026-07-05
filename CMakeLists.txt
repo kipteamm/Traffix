@@ -23,6 +23,9 @@ add_executable(Traffix
         roads/RoadNetwork.cpp
         roads/Segment.cpp
         roads/RoadConfig.h
+        roads/Intersection.cpp
+        roads/Intersection.h
+        roads/Bezier.h
 )
 
 target_link_libraries(Traffix PRIVATE sfml-graphics sfml-window sfml-system)

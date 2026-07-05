@@ -115,12 +115,12 @@ BuildingRoadUI::BuildingRoadUI(const sf::Window& window)
     UIButton straightRoadButton(buttonSize, "S", sf::Color(192, 192, 192));
     UIButton curvedRoadButton(buttonSize, "C", sf::Color(192, 192, 192));
 
-    straightRoadButton.setOnClick([](Game* game){
+    straightRoadButton.setOnClick([](const Game* game){
         std::cout << "Straight road selected!" << std::endl;
         game->getRoadBuilder()->setMode(STRAIGHT);
     });
 
-    curvedRoadButton.setOnClick([](Game* game){
+    curvedRoadButton.setOnClick([](const Game* game){
         std::cout << "Curved road selected!" << std::endl;
         game->getRoadBuilder()->setMode(CURVED);
     });

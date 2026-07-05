@@ -30,6 +30,11 @@ public:
     [[nodiscard]] float getVOffset() const { return m_vOffset; };
     [[nodiscard]] float getLength() const;
 
+    [[nodiscard]] float getLaneWidth() const { return laneWidth; }
+
+    void setStartSetback(float distance);
+    void setEndSetback(float distance);
+
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomStartNormal() const { return customStartNormal; }
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomEndNormal() const { return customEndNormal; }
 
@@ -48,6 +53,11 @@ private:
     Node* end;
     sf::Vector2f curvePoint;
     RoadConfig config;
+    float laneWidth = 0;
+
+    // Intersection related
+    float startSetback = 0.0f;
+    float endSetback = 0.0f;
 
     // Mesh
     std::optional<sf::Vector2f> customStartNormal;
@@ -60,12 +70,10 @@ private:
     std::vector<float> mDistances;
 
     void precalculateDistances();
+    float getT(float distance) const;
 
     void generateAsphaltMesh();
     void generateMarkingsMesh();
-
-    sf::Vector2f getBezierPoint(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;
-    sf::Vector2f getBezierNormal(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;
 };
 
 

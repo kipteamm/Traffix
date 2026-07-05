@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "Intersection.h"
 #include "Segment.h"
 
 
@@ -24,14 +25,17 @@ struct GridKeyHash {
 };
 
 
+class RoadNetwork;
+
 struct Node {
     sf::Vector2f position;
+    bool isIntersection = false;
 
     std::vector<Segment*> segments;
 
     explicit Node(sf::Vector2f position);
 
-    void addConnection(Segment* segment);
+    void addConnection(Segment* segment, RoadNetwork* network);
 };
 
 
@@ -44,14 +48,15 @@ class RoadNetwork final : public sf::Drawable {
 public:
     RoadNetwork() = default;
 
-    Node* createNode(sf::Vector2f position);
-
+    [[nodiscard]] Node* createNode(sf::Vector2f position);
     Segment* createSegment(Node* start, Node* end, sf::Vector2f control, const RoadConfig& config);
+    [[nodiscard]] Intersection* createIntersection(Node* node);
 
     [[nodiscard]] GridKey getGridKey(const sf::Vector2f& pos) const;
 
-    Node* findNearestNode(const sf::Vector2f& position);
+    [[nodiscard]] Node* findNearestNode(const sf::Vector2f& position);
     // Segment* findNearestSegment(const sf::Vector2f& position);
+    [[nodiscard]] Intersection* getIntersection(const Node* node) const;
 
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
@@ -61,6 +66,7 @@ private:
 
     std::unordered_map<GridKey, std::vector<Node*>, GridKeyHash> nodeGrid;
     std::unordered_map<GridKey, std::vector<Segment*>, GridKeyHash> segmentGrid;
+    std::unordered_map<const Node*, std::unique_ptr<Intersection>> intersections;
 };
 
 

@@ -1,9 +1,10 @@
 #include <optional>
 #include <cmath>
 
-#include "Segment.h"
-
 #include "RoadNetwork.h"
+#include "Segment.h"
+#include "Bezier.h"
+
 
 
 namespace Atlas {
@@ -32,6 +33,10 @@ Segment::Segment(
     asphaltMesh.setPrimitiveType(sf::Triangles);
     markingsMesh.setPrimitiveType(sf::Triangles);
 
+    for (const auto& lane : config.lanes) {
+        this->laneWidth += lane.widthMeters;
+    }
+
     precalculateDistances();
 
     this->generateAsphaltMesh();
@@ -49,6 +54,14 @@ float Segment::getLength() const {
     return mDistances.back();
 }
 
+
+void Segment::setStartSetback(const float distance) {
+    startSetback = distance;
+}
+
+void Segment::setEndSetback(const float distance) {
+    endSetback = distance;
+}
 
 
 void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const std::optional<sf::Vector2f> endNormal) {
@@ -83,11 +96,34 @@ void Segment::precalculateDistances() {
 }
 
 
+float Segment::getT(const float distance) const {
+    if (distance <= 0.0f) return 0.0f;
+    if (mDistances.empty()) return 0.0f;
+    if (distance >= mDistances.back()) return 1.0f;
+
+    for (size_t i = 0; i < mDistances.size() - 1; ++i) {
+        // if (targetDist >= mDistances[i] && targetDist <= mDistances[i+1]) {
+        if (distance < mDistances[i] || distance > mDistances[i+1]) continue;
+
+        const float segmentLen = mDistances[i+1] - mDistances[i];
+        const float fraction = (segmentLen == 0.0f) ? 0.0f : (distance - mDistances[i]) / segmentLen;
+
+        return (i + fraction) / CURVEPOINTS;
+    }
+
+    return 1.0f;
+}
+
+
+
 void Segment::generateAsphaltMesh() {
     float totalWidthPx = 0.0f;
     for (const auto& [widthMeters] : config.lanes) totalWidthPx += widthMeters * Scale::PPM;
 
     float currentLeftOffset = -totalWidthPx / 2.0f;
+
+    const float totalLength = getLength();
+    // const float startT = getT(startSetback);
 
     for (const auto& [widthMeters] : config.lanes) {
         const float laneWidthPx = widthMeters * Scale::PPM;
@@ -96,8 +132,18 @@ void Segment::generateAsphaltMesh() {
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
+        bool prevCutoff = true;
+
+        // float currentDist = startSetback;
+        // sf::Vector2f prevCenter = getBezierPoint(start->position, curvePoint, end->position, startT);
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
+            const float currentDist = mDistances[i];
+
+            // Determine whether we should append triangles to mesh. Triangles
+            // in setback zone should be ignored.
+            const bool cutoff = (currentDist < startSetback) || (currentDist > (totalLength - endSetback));
+
             float t = static_cast<float>(i) / CURVEPOINTS;
             sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
 
@@ -120,7 +166,7 @@ void Segment::generateAsphaltMesh() {
             sf::Vector2f leftPos  = center + normal * currentLeftOffset;
             sf::Vector2f rightPos = center + normal * laneRightOffset;
 
-            if (i > 0) {
+            if (i > 0 && !cutoff && !prevCutoff) {
                 // Scale the U coordinates relative to the center line mapping offset based on uScale
                 sf::Vector2f uvPrevLeft(Atlas::CENTER_U + (currentLeftOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
                 sf::Vector2f uvPrevRight(Atlas::CENTER_U + (laneRightOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
@@ -141,6 +187,7 @@ void Segment::generateAsphaltMesh() {
             prevLeftPos = leftPos;
             prevRightPos = rightPos;
             prevV = v;
+            prevCutoff = cutoff;
         }
         currentLeftOffset = laneRightOffset;
     }
@@ -148,6 +195,8 @@ void Segment::generateAsphaltMesh() {
 
 
 void Segment::generateMarkingsMesh() {
+    const float totalLength = getLength();
+
     for (const auto& [offsetFromRoadCenterMeters, markingType] : config.markings) {
         float uStart = 0.0f, uEnd = 0.0f;
 
@@ -172,8 +221,15 @@ void Segment::generateMarkingsMesh() {
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
+        bool prevCutoff = true;
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
+            const float currentDist = mDistances[i];
+
+            // Determine whether we should append triangles to mesh. Triangles
+            // in setback zone should be ignored.
+            const bool cutoff = (currentDist < startSetback) || (currentDist > (totalLength - endSetback));
+
             float t = static_cast<float>(i) / CURVEPOINTS;
             sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
 
@@ -192,7 +248,7 @@ void Segment::generateMarkingsMesh() {
             sf::Vector2f leftPos  = center + normal * leftLineOffset;
             sf::Vector2f rightPos = center + normal * rightLineOffset;
 
-            if (i > 0) {
+            if (i > 0 && !cutoff && !prevCutoff) {
                 // Triangle 1
                 markingsMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, sf::Vector2f(uStart, prevV)));
                 markingsMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(uEnd, prevV)));
@@ -207,22 +263,7 @@ void Segment::generateMarkingsMesh() {
             prevLeftPos = leftPos;
             prevRightPos = rightPos;
             prevV = v;
+            prevCutoff = cutoff;
         }
     }
-}
-
-
-sf::Vector2f Segment::getBezierPoint(const sf::Vector2f p0, const sf::Vector2f p1, const sf::Vector2f p2, const float t) const {
-    const float u = 1.0f - t;
-    return u * u * p0 + 2.0f * u * t * p1 + t * t * p2;
-}
-
-
-sf::Vector2f Segment::getBezierNormal(const sf::Vector2f p0, const sf::Vector2f p1, const sf::Vector2f p2, const float t) const {
-    sf::Vector2f tangent = 2.0f * (1.0f - t) * (p1 - p0) + 2.0f * t * (p2 - p1);
-    const float length = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
-    if (length != 0) {
-        tangent /= length;
-    }
-    return sf::Vector2f(-tangent.y, tangent.x);
 }

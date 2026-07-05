@@ -74,7 +74,8 @@ void connect(Segment* segmentA, Segment* segmentB, const Node* commonNode) {
 
 Node::Node(const sf::Vector2f position) : position(position) {}
 
-void Node::addConnection(Segment* segment) {
+
+void Node::addConnection(Segment* segment, RoadNetwork* network) {
     segments.push_back(segment);
 
     // Early return if this is the only segment
@@ -84,7 +85,13 @@ void Node::addConnection(Segment* segment) {
     if (segments.size() == 2)
         return connect(segments[0], segments[1], this);
 
-    // Node became intersection
+    // Node already is an intersection, update mesh
+    if (isIntersection)
+        return network->getIntersection(this)->buildMesh();
+
+    // Node wasn't an intersection, but is one now
+    isIntersection = true;
+    network->createIntersection(this)->buildMesh();
 }
 
 
@@ -118,10 +125,20 @@ Segment* RoadNetwork::createSegment(Node* start, Node* end, sf::Vector2f control
         ptr->setVOffset(offset);
     }
 
-    start->addConnection(ptr);
-    end->addConnection(ptr);
+    start->addConnection(ptr, this);
+    end->addConnection(ptr, this);
 
     // not sure how to do segment looking up
+
+    return ptr;
+}
+
+
+Intersection* RoadNetwork::createIntersection(Node* node) {
+    auto intersection = std::make_unique<Intersection>(node);
+    Intersection* ptr = intersection.get();
+
+    intersections[node] = std::move(intersection);
 
     return ptr;
 }
@@ -166,6 +183,15 @@ Node* RoadNetwork::findNearestNode(const sf::Vector2f& position) {
 }
 
 
+Intersection* RoadNetwork::getIntersection(const Node* node) const {
+    const auto it = intersections.find(node);
+    if (it == intersections.end()) return nullptr;
+
+    return it->second.get();
+}
+
+
+
 void RoadNetwork::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     const sf::View currentView = target.getView();
     const sf::FloatRect viewBounds(
@@ -189,6 +215,13 @@ void RoadNetwork::draw(sf::RenderTarget& target, sf::RenderStates states) const 
         const auto& markings = segment->getMarkingsMesh();
         for (size_t i = 0; i < markings.getVertexCount(); ++i) {
             visibleMarkings.append(markings[i]);
+        }
+    }
+
+    for (const auto& [_, intersection] : intersections) {
+        const auto& asphalt = intersection->getAsphaltMesh();
+        for (size_t i = 0; i < asphalt.getVertexCount(); ++i) {
+            visibleAsphalt.append(asphalt[i]);
         }
     }
 

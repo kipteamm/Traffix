@@ -4,6 +4,7 @@
 Game::Game(const std::shared_ptr<sf::RenderWindow>& window) : window(window) {
     gameRenderer = std::make_unique<GameRenderer>(this, window);
     roadBuilder = std::make_unique<RoadBuilder>();
+    roadNetwork = std::make_unique<RoadNetwork>();
 }
 
 
@@ -40,22 +41,13 @@ void Game::handleEvents() {
                 break;
 
             case sf::Event::MouseButtonPressed: {
-                // Release road point (right click)
-                if (event.mouseButton.button == sf::Mouse::Button::Right
-                    && state == GameState::BuildingRoad
-                    && roadBuilder->popPoint()) break;
-
-                const bool uiClick = this->gameRenderer->mouseClickEvent(event);
-                if (uiClick) break;
+                // Click should go through to next event handler
+                bool transcending = this->gameRenderer->mouseClickEvent(event);
+                if (!transcending) break;
 
                 if (state == GameState::BuildingRoad) {
-                    roadBuilder->addPoint();
-
-                    if (roadBuilder->total() == 2 && roadBuilder->getMode() == STRAIGHT) {
-                        roadBuilder->buildSegment(*road);
-                    } else if (roadBuilder->total() == 3 && roadBuilder->getMode() == CURVED) {
-                        roadBuilder->buildSegment(*road);
-                    }
+                    transcending = roadBuilder->mouseClickEvent(event, roadNetwork.get());
+                    if (!transcending) break;
                 }
 
                 break;
@@ -72,10 +64,11 @@ void Game::handleEvents() {
             case sf::Event::MouseMoved: {
                 if (this->state != GameState::BuildingRoad) break;
 
-                roadBuilder->setMousePosition(window->mapPixelToCoords(
+                sf::Vector2f mousePos = window->mapPixelToCoords(
                     sf::Mouse::getPosition(*window), gameRenderer->getCamera()
-                ), *road);
+                );
 
+                roadBuilder->setMousePosition(mousePos, roadNetwork.get());
                 break;
             }
 

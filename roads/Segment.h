@@ -1,6 +1,7 @@
 #ifndef TRAFFIX_SEGMENT_H
 #define TRAFFIX_SEGMENT_H
 
+#include "RoadConfig.h"
 #include <SFML/Graphics.hpp>
 #include <optional>
 
@@ -12,31 +13,17 @@ namespace Scale {
 }
 
 
-enum MarkingType {
-    NONE, SOLID, DASHED
-};
-
-
-struct LaneConfig {
-    float widthMeters;
-};
-
-struct MarkingConfig {
-    // Where is it located relative to the road center?
-    float offsetFromRoadCenterMeters;
-    MarkingType markingType;
-};
+struct Node;
 
 
 class Segment {
 public:
-    explicit Segment(sf::Vector2f start, sf::Vector2f end, sf::Vector2f curvePoint,
-        const std::vector<LaneConfig>& lanes,
-        const std::vector<MarkingConfig>& markings
+    explicit Segment(Node* start, Node* end, sf::Vector2f curvePoint,
+        const RoadConfig& config
     );
 
-    [[nodiscard]] const sf::Vector2f& getStart() const { return start; }
-    [[nodiscard]] const sf::Vector2f& getEnd() const { return end; }
+    [[nodiscard]] Node* getStart() const { return start; }
+    [[nodiscard]] Node* getEnd() const { return end; }
     [[nodiscard]] const sf::Vector2f& getCurvePoint() const { return curvePoint; }
 
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomStartNormal() const { return customStartNormal; }
@@ -48,16 +35,17 @@ public:
 
     void updateNormals(
         std::optional<sf::Vector2f> startNormal,
-        std::optional<sf::Vector2f> endNormal,
-        const std::vector<LaneConfig>& lanes,
-        const std::vector<MarkingConfig>& markings
+        std::optional<sf::Vector2f> endNormal
     );
 
 private:
-    sf::Vector2f start;
-    sf::Vector2f end;
+    // Config
+    Node* start;
+    Node* end;
     sf::Vector2f curvePoint;
+    RoadConfig config;
 
+    // Mesh
     std::optional<sf::Vector2f> customStartNormal;
     std::optional<sf::Vector2f> customEndNormal;
 
@@ -68,8 +56,8 @@ private:
 
     void precalculateDistances();
 
-    void generateAsphaltMesh(const std::vector<LaneConfig>& lanes);
-    void generateMarkingsMesh(const std::vector<MarkingConfig>& markings);
+    void generateAsphaltMesh();
+    void generateMarkingsMesh();
 
     sf::Vector2f getBezierPoint(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;
     sf::Vector2f getBezierNormal(sf::Vector2f p0, sf::Vector2f p1, sf::Vector2f p2, float t) const;

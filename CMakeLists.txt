@@ -20,8 +20,9 @@ add_executable(Traffix
         rendering/gui/UIButton.cpp
         rendering/gui/UIState.cpp
         roads/RoadBuilder.cpp
+        roads/RoadNetwork.cpp
         roads/Segment.cpp
-        roads/Road.cpp
+        roads/RoadConfig.h
 )
 
 target_link_libraries(Traffix PRIVATE sfml-graphics sfml-window sfml-system)

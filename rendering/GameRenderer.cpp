@@ -32,7 +32,10 @@ void GameRenderer::render() {
 
 
 void GameRenderer::renderWorld() {
-    window->draw(*game->getRoad());
+    // Render roadnetwork
+    window->draw(*game->getRoadNetwork());
+
+    // Render preview
     game->getRoadBuilder()->renderPreview(window.get());
 }
 
@@ -81,7 +84,7 @@ bool GameRenderer::mouseClickEvent(const sf::Event &event) {
         return uiManager->handleClick(uiPos);
     }
 
-    return false;
+    return true;
 }
 
 void GameRenderer::mouseReleaseEvent(const sf::Event &event) {

@@ -4,13 +4,17 @@
 #include <vector>
 #include <SFML/System/Vector2.hpp>
 
-#include "Road.h"
+#include "RoadNetwork.h"
 
 
 struct SnapPoint {
     bool snapped = false;
     sf::Vector2f position;
-    Segment* targetSegment = nullptr;
+    Node* node = nullptr;
+
+    explicit SnapPoint() = default;
+    explicit SnapPoint(const SnapPoint* point)
+        : snapped(point->snapped), position(point->position), node(point->node) {}
 };
 
 
@@ -23,34 +27,30 @@ class RoadBuilder {
 public:
     explicit RoadBuilder();
 
-    void addPoint();
-    [[nodiscard]] int total() const { return points.size(); }
-    [[nodiscard]] bool popPoint();
-
     void setMode(RoadBuildMode newMode);
     [[nodiscard]] RoadBuildMode getMode() const { return mode; }
 
-    void buildSegment(Road& road);
+    bool mouseClickEvent(const sf::Event &event, RoadNetwork* network);
 
-    void setMousePosition(sf::Vector2f pos, const Road& road);
+    void setMousePosition(sf::Vector2f pos, RoadNetwork* network) const;
     void renderPreview(sf::RenderWindow* window) const;
 
 private:
     std::vector<SnapPoint> points;
     RoadBuildMode mode = STRAIGHT;
+    RoadConfig config;
 
-    SnapPoint currentMousePos;
+    std::unique_ptr<SnapPoint> currentMousePos = std::make_unique<SnapPoint>();
 
     mutable sf::VertexArray m_previewMesh{sf::Triangles};
     mutable sf::VertexArray m_leftOutline{sf::LineStrip};
     mutable sf::VertexArray m_rightOutline{sf::LineStrip};
 
-    SnapPoint findSnapTarget(const Road& road, sf::Vector2f mousePos);
+    void buildSegment(RoadNetwork* network);
     void connect(
         Segment* segmentA, bool segmentAend,
         Segment* segmentB, bool segmentBend,
-        const std::vector<LaneConfig>& lanes,
-        const std::vector<MarkingConfig>& markings
+        const RoadConfig& config
     );
 };
 

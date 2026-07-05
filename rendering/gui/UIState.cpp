@@ -14,10 +14,10 @@ bool UIState::handleClick(const sf::Vector2f mousePos, Game* game) {
     for (UIButton &button: buttons) {
         if (!button.contains(mousePos)) continue;
         button.onClick(game);
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
 

@@ -2,7 +2,8 @@
 #include <cmath>
 
 #include "Segment.h"
-#include "Road.h"
+
+#include "RoadNetwork.h"
 
 
 namespace Atlas {
@@ -23,31 +24,30 @@ namespace Atlas {
 
 
 Segment::Segment(
-    const sf::Vector2f start, const sf::Vector2f end, const sf::Vector2f curvePoint,
-    const std::vector<LaneConfig>& lanes,
-    const std::vector<MarkingConfig>& markings
+    Node* start, Node* end, const sf::Vector2f curvePoint,
+    const RoadConfig& config
 )
-        : start(start), end(end), curvePoint(curvePoint)
+        : start(start), end(end), curvePoint(curvePoint), config(config)
 {
     asphaltMesh.setPrimitiveType(sf::Triangles);
     markingsMesh.setPrimitiveType(sf::Triangles);
 
     precalculateDistances();
 
-    this->generateAsphaltMesh(lanes);
-    this->generateMarkingsMesh(markings);
+    this->generateAsphaltMesh();
+    this->generateMarkingsMesh();
 }
 
 
-void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const std::optional<sf::Vector2f> endNormal, const std::vector<LaneConfig>& lanes, const std::vector<MarkingConfig>& markings) {
+void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const std::optional<sf::Vector2f> endNormal) {
     customStartNormal = startNormal;
     customEndNormal = endNormal;
 
     asphaltMesh.clear();
     markingsMesh.clear();
 
-    generateAsphaltMesh(lanes);
-    generateMarkingsMesh(markings);
+    generateAsphaltMesh();
+    generateMarkingsMesh();
 }
 
 
@@ -55,11 +55,11 @@ void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const
 void Segment::precalculateDistances() {
     mDistances.resize(CURVEPOINTS + 1, 0.0f);
     float accumulated = 0.0f;
-    sf::Vector2f prevPoint = start;
+    sf::Vector2f prevPoint = start->position;
 
     for (int i = 0; i <= CURVEPOINTS; ++i) {
         float t = static_cast<float>(i) / CURVEPOINTS;
-        sf::Vector2f currentPoint = getBezierPoint(start, curvePoint, end, t);
+        sf::Vector2f currentPoint = getBezierPoint(start->position, curvePoint, end->position, t);
 
         if (i > 0) {
             sf::Vector2f diff = currentPoint - prevPoint;
@@ -71,13 +71,13 @@ void Segment::precalculateDistances() {
 }
 
 
-void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
+void Segment::generateAsphaltMesh() {
     float totalWidthPx = 0.0f;
-    for (const auto& [widthMeters] : lanes) totalWidthPx += widthMeters * Scale::PPM;
+    for (const auto& [widthMeters] : config.lanes) totalWidthPx += widthMeters * Scale::PPM;
 
     float currentLeftOffset = -totalWidthPx / 2.0f;
 
-    for (const auto& [widthMeters] : lanes) {
+    for (const auto& [widthMeters] : config.lanes) {
         const float laneWidthPx = widthMeters * Scale::PPM;
         const float laneRightOffset = currentLeftOffset + laneWidthPx;
 
@@ -87,9 +87,9 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
             float t = static_cast<float>(i) / CURVEPOINTS;
-            sf::Vector2f center = getBezierPoint(start, curvePoint, end, t);
+            sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
 
-            sf::Vector2f baseNormal = getBezierNormal(start, curvePoint, end, t); // Keep track of base normal length (1.0)
+            sf::Vector2f baseNormal = getBezierNormal(start->position, curvePoint, end->position, t); // Keep track of base normal length (1.0)
             sf::Vector2f normal = baseNormal;
 
             float uScale = 1.0f; // Default scale factor
@@ -135,8 +135,8 @@ void Segment::generateAsphaltMesh(const std::vector<LaneConfig>& lanes) {
 }
 
 
-void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
-    for (const auto& [offsetFromRoadCenterMeters, markingType] : markings) {
+void Segment::generateMarkingsMesh() {
+    for (const auto& [offsetFromRoadCenterMeters, markingType] : config.markings) {
         float uStart = 0.0f, uEnd = 0.0f;
 
         if (markingType == NONE) continue;
@@ -163,10 +163,10 @@ void Segment::generateMarkingsMesh(const std::vector<MarkingConfig>& markings) {
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
             float t = static_cast<float>(i) / CURVEPOINTS;
-            sf::Vector2f center = getBezierPoint(start, curvePoint, end, t);
+            sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
 
             // Base normal fallback
-            sf::Vector2f normal = getBezierNormal(start, curvePoint, end, t);
+            sf::Vector2f normal = getBezierNormal(start->position, curvePoint, end->position, t);
 
             // Miter override injections
             if (i == 0 && customStartNormal.has_value()) {

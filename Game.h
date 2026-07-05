@@ -5,6 +5,7 @@
 
 #include "rendering/GameRenderer.h"
 #include "roads/RoadBuilder.h"
+#include "roads/RoadNetwork.h"
 
 
 enum class GameState {
@@ -14,6 +15,7 @@ enum class GameState {
 
 class GameRenderer;
 
+
 class Game {
 public:
     explicit Game(const std::shared_ptr<sf::RenderWindow>& window);
@@ -22,8 +24,7 @@ public:
     GameState getState();
 
     [[nodiscard]] RoadBuilder* getRoadBuilder() const { return roadBuilder.get(); }
-
-    [[nodiscard]] Road* getRoad() const { return road; };
+    [[nodiscard]] RoadNetwork* getRoadNetwork() const { return roadNetwork.get(); }
 
     void update();
     void render();
@@ -34,9 +35,7 @@ private:
 
     std::unique_ptr<GameRenderer> gameRenderer;
     std::unique_ptr<RoadBuilder> roadBuilder;
-
-    // TEMPORARY
-    Road* road = new Road;
+    std::unique_ptr<RoadNetwork> roadNetwork;
 
     void handleEvents();
 };

@@ -3,9 +3,6 @@
 #include "Bezier.h"
 
 
-constexpr float PADDING = Scale::PPM / 2;
-
-
 Intersection::Intersection(Node* centerNode) : centerNode(centerNode) {}
 
 
@@ -91,8 +88,8 @@ void Intersection::generateAsphaltMesh() {
         const float setbackCurrent = (toIntersection.x * current.tangent.x) + (toIntersection.y * current.tangent.y);
         const float setbackNext = (toIntersection.x * next.tangent.x) + (toIntersection.y * next.tangent.y);
 
-        current.calculatedSetback = std::max(current.calculatedSetback, setbackCurrent + PADDING);
-        next.calculatedSetback = std::max(next.calculatedSetback, setbackNext + PADDING);
+        current.calculatedSetback = std::max(current.calculatedSetback, setbackCurrent);
+        next.calculatedSetback = std::max(next.calculatedSetback, setbackNext);
     }
 
     // Generate intersection mesh
@@ -106,9 +103,11 @@ void Intersection::generateAsphaltMesh() {
             data.segment->updateNormals(data.segment->getCustomStartNormal(), std::nullopt);
         }
 
-        const float t = data.isStart
-            ? (data.calculatedSetback / data.segment->getLength())
-            : ((data.segment->getLength() - data.calculatedSetback) / data.segment->getLength());
+        const float targetDist = data.isStart
+            ? data.calculatedSetback
+            : (data.segment->getLength() - data.calculatedSetback);
+
+        const float t = data.segment->getT(targetDist);
 
         sf::Vector2f cutoffCenter = getBezierPoint(data.segment->getStart()->position, data.segment->getCurvePoint(), data.segment->getEnd()->position, t);
 

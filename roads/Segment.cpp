@@ -76,6 +76,24 @@ void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const
 }
 
 
+float Segment::getT(const float distance) const {
+    if (distance <= 0.0f) return 0.0f;
+    if (mDistances.empty()) return 0.0f;
+    if (distance >= mDistances.back()) return 1.0f;
+
+    for (size_t i = 0; i < mDistances.size() - 1; ++i) {
+        // if (targetDist >= mDistances[i] && targetDist <= mDistances[i+1]) {
+        if (distance < mDistances[i] || distance > mDistances[i+1]) continue;
+
+        const float segmentLen = mDistances[i+1] - mDistances[i];
+        const float fraction = (segmentLen == 0.0f) ? 0.0f : (distance - mDistances[i]) / segmentLen;
+
+        return (i + fraction) / CURVEPOINTS;
+    }
+
+    return 1.0f;
+}
+
 
 void Segment::precalculateDistances() {
     mDistances.resize(CURVEPOINTS + 1, 0.0f);
@@ -96,34 +114,14 @@ void Segment::precalculateDistances() {
 }
 
 
-float Segment::getT(const float distance) const {
-    if (distance <= 0.0f) return 0.0f;
-    if (mDistances.empty()) return 0.0f;
-    if (distance >= mDistances.back()) return 1.0f;
-
-    for (size_t i = 0; i < mDistances.size() - 1; ++i) {
-        // if (targetDist >= mDistances[i] && targetDist <= mDistances[i+1]) {
-        if (distance < mDistances[i] || distance > mDistances[i+1]) continue;
-
-        const float segmentLen = mDistances[i+1] - mDistances[i];
-        const float fraction = (segmentLen == 0.0f) ? 0.0f : (distance - mDistances[i]) / segmentLen;
-
-        return (i + fraction) / CURVEPOINTS;
-    }
-
-    return 1.0f;
-}
-
-
-
 void Segment::generateAsphaltMesh() {
     float totalWidthPx = 0.0f;
     for (const auto& [widthMeters] : config.lanes) totalWidthPx += widthMeters * Scale::PPM;
 
     float currentLeftOffset = -totalWidthPx / 2.0f;
 
-    const float totalLength = getLength();
-    // const float startT = getT(startSetback);
+    const float startT = getT(startSetback);
+    const float endT = getT(getLength() - endSetback);
 
     for (const auto& [widthMeters] : config.lanes) {
         const float laneWidthPx = widthMeters * Scale::PPM;
@@ -132,25 +130,21 @@ void Segment::generateAsphaltMesh() {
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
-        bool prevCutoff = true;
 
-        // float currentDist = startSetback;
-        // sf::Vector2f prevCenter = getBezierPoint(start->position, curvePoint, end->position, startT);
+        float currentDist = startSetback;
+        sf::Vector2f prevCenter = getBezierPoint(start->position, curvePoint, end->position, startT);
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
-            const float currentDist = mDistances[i];
-
-            // Determine whether we should append triangles to mesh. Triangles
-            // in setback zone should be ignored.
-            const bool cutoff = (currentDist < startSetback) || (currentDist > (totalLength - endSetback));
-
-            float t = static_cast<float>(i) / CURVEPOINTS;
+            float t = startT + (static_cast<float>(i) / CURVEPOINTS) * (endT - startT);
             sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
 
-            sf::Vector2f baseNormal = getBezierNormal(start->position, curvePoint, end->position, t); // Keep track of base normal length (1.0)
+            currentDist += std::hypot(center.x - prevCenter.x, center.y - prevCenter.y);
+            prevCenter = center;
+
+            sf::Vector2f baseNormal = getBezierNormal(start->position, curvePoint, end->position, t);
             sf::Vector2f normal = baseNormal;
 
-            float uScale = 1.0f; // Default scale factor
+            float uScale = 1.0f;
 
             if (i == 0 && customStartNormal.has_value()) {
                 normal = customStartNormal.value();
@@ -166,7 +160,7 @@ void Segment::generateAsphaltMesh() {
             sf::Vector2f leftPos  = center + normal * currentLeftOffset;
             sf::Vector2f rightPos = center + normal * laneRightOffset;
 
-            if (i > 0 && !cutoff && !prevCutoff) {
+            if (i > 0) {
                 // Scale the U coordinates relative to the center line mapping offset based on uScale
                 sf::Vector2f uvPrevLeft(Atlas::CENTER_U + (currentLeftOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
                 sf::Vector2f uvPrevRight(Atlas::CENTER_U + (laneRightOffset * (i == 1 && customStartNormal.has_value() ? std::sqrt(customStartNormal.value().x*customStartNormal.value().x + customStartNormal.value().y*customStartNormal.value().y) : 1.0f)), prevV);
@@ -187,7 +181,6 @@ void Segment::generateAsphaltMesh() {
             prevLeftPos = leftPos;
             prevRightPos = rightPos;
             prevV = v;
-            prevCutoff = cutoff;
         }
         currentLeftOffset = laneRightOffset;
     }
@@ -195,7 +188,8 @@ void Segment::generateAsphaltMesh() {
 
 
 void Segment::generateMarkingsMesh() {
-    const float totalLength = getLength();
+    const float startT = getT(startSetback);
+    const float endT = getT(getLength() - endSetback);
 
     for (const auto& [offsetFromRoadCenterMeters, markingType] : config.markings) {
         float uStart = 0.0f, uEnd = 0.0f;
@@ -221,17 +215,17 @@ void Segment::generateMarkingsMesh() {
         sf::Vector2f prevLeftPos;
         sf::Vector2f prevRightPos;
         float prevV = 0.0f;
-        bool prevCutoff = true;
+
+        float currentDist = startSetback;
+        sf::Vector2f prevCenter = getBezierPoint(start->position, curvePoint, end->position, startT);
+
 
         for (int i = 0; i <= CURVEPOINTS; ++i) {
-            const float currentDist = mDistances[i];
-
-            // Determine whether we should append triangles to mesh. Triangles
-            // in setback zone should be ignored.
-            const bool cutoff = (currentDist < startSetback) || (currentDist > (totalLength - endSetback));
-
-            float t = static_cast<float>(i) / CURVEPOINTS;
+            float t = startT + (static_cast<float>(i) / CURVEPOINTS) * (endT - startT);
             sf::Vector2f center = getBezierPoint(start->position, curvePoint, end->position, t);
+
+            currentDist += std::hypot(center.x - prevCenter.x, center.y - prevCenter.y);
+            prevCenter = center;
 
             // Base normal fallback
             sf::Vector2f normal = getBezierNormal(start->position, curvePoint, end->position, t);
@@ -248,7 +242,7 @@ void Segment::generateMarkingsMesh() {
             sf::Vector2f leftPos  = center + normal * leftLineOffset;
             sf::Vector2f rightPos = center + normal * rightLineOffset;
 
-            if (i > 0 && !cutoff && !prevCutoff) {
+            if (i > 0) {
                 // Triangle 1
                 markingsMesh.append(sf::Vertex(prevLeftPos, sf::Color::White, sf::Vector2f(uStart, prevV)));
                 markingsMesh.append(sf::Vertex(prevRightPos, sf::Color::White, sf::Vector2f(uEnd, prevV)));
@@ -263,7 +257,6 @@ void Segment::generateMarkingsMesh() {
             prevLeftPos = leftPos;
             prevRightPos = rightPos;
             prevV = v;
-            prevCutoff = cutoff;
         }
     }
 }

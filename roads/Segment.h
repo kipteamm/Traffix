@@ -47,6 +47,8 @@ public:
         std::optional<sf::Vector2f> endNormal
     );
 
+    float getT(float distance) const;
+
 private:
     // Config
     Node* start;
@@ -70,7 +72,6 @@ private:
     std::vector<float> mDistances;
 
     void precalculateDistances();
-    float getT(float distance) const;
 
     void generateAsphaltMesh();
     void generateMarkingsMesh();

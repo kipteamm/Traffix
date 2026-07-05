@@ -31,4 +31,10 @@ struct RoadConfig {
 };
 
 
+inline std::unordered_map<std::string, RoadConfig> CONFIGURATIONS = {
+    {"Single lane - One Directional", {{{3.4}}, {{-1.5, SOLID}, {1.5, SOLID}}}},
+    {"Two lane - Bi Directional", {{{3.3}, {3.3}}, {{-3.1, SOLID}, {3.1, SOLID}, {0, DASHED}}}}
+};
+
+
 #endif //TRAFFIX_ROADCONFIG_H

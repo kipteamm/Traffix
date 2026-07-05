@@ -29,6 +29,7 @@ public:
 
     void setMode(RoadBuildMode newMode);
     [[nodiscard]] RoadBuildMode getMode() const { return mode; }
+    void setConfig(const RoadConfig& newConfig);
 
     bool mouseClickEvent(const sf::Event &event, RoadNetwork* network);
 
@@ -47,11 +48,6 @@ private:
     mutable sf::VertexArray m_rightOutline{sf::LineStrip};
 
     void buildSegment(RoadNetwork* network);
-    void connect(
-        Segment* segmentA, bool segmentAend,
-        Segment* segmentB, bool segmentBend,
-        const RoadConfig& config
-    );
 };
 
 

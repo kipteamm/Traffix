@@ -6,12 +6,6 @@
 #include <cmath>
 
 
-std::unordered_map<std::string, RoadConfig> CONFIGURATIONS = {
-    {"Single lane - One Directional", {{{3.4}}, {{-1.5, SOLID}, {1.5, SOLID}}}},
-    {"Two lane - Bi Directional", {{{3.3}, {3.3}}, {{-3.1, SOLID}, {-3.1, SOLID}, {0, DASHED}}}}
-};
-
-
 RoadBuilder::RoadBuilder() {
     // At most 3 points (start, curve, end)
     points.reserve(3);
@@ -21,6 +15,11 @@ RoadBuilder::RoadBuilder() {
 
 void RoadBuilder::setMode(const RoadBuildMode newMode) {
     this->mode = newMode;
+}
+
+
+void RoadBuilder::setConfig(const RoadConfig& newConfig) {
+    this->config = newConfig;
 }
 
 
@@ -68,27 +67,6 @@ void RoadBuilder::buildSegment(RoadNetwork* network) {
     currentMousePos->node = endNode;
 
     points.push_back(SnapPoint(currentMousePos.get()));
-
-    // auto segment = std::make_unique<Segment>(
-    //     p0.position, p2.position, p1,
-    //     config
-    // );
-    //
-    // if (p0.snapped && p0.targetSegment != nullptr) {
-    //     connect(
-    //         p0.targetSegment, true,
-    //         segment.get(), false
-    //     );
-    // }
-    // if (p2.snapped && p2.targetSegment != nullptr) {
-    //     connect(
-    //         p2.targetSegment, false,
-    //         segment.get(), true
-    //     );
-    // }
-
-    // Only transfer owner ship by the end of function
-    // network->addSegment(std::move(segment));
 }
 
 
@@ -125,7 +103,13 @@ void RoadBuilder::renderPreview(sf::RenderWindow* window) const {
     const sf::Vector2f p2 = currentMousePos->position;
 
     // Match physical width mapping
-    const float halfWidthPx = (3.4f * Scale::PPM) / 2.0f;
+    float width = 0;
+
+    for (const auto& lane: config.lanes) {
+        width += lane.widthMeters;
+    }
+
+    const float halfWidthPx = (width * Scale::PPM) / 2.0f;
 
     sf::Vector2f prevLeftPos;
     sf::Vector2f prevRightPos;

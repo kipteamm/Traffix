@@ -106,6 +106,18 @@ Segment* RoadNetwork::createSegment(Node* start, Node* end, sf::Vector2f control
 
     Segment* ptr = segments.back().get();
 
+    // If this road is connected to just the one other road, continue the
+    // texture as if it were one.
+    if (start->segments.size() == 1) {
+        float offset = 0.f;
+        for (const Segment* seg: start->segments) {
+            if (seg->getEnd() != start) continue;
+            offset = seg->getVOffset() + seg->getLength();
+        }
+
+        ptr->setVOffset(offset);
+    }
+
     start->addConnection(ptr);
     end->addConnection(ptr);
 

@@ -39,6 +39,18 @@ Segment::Segment(
 }
 
 
+void Segment::setVOffset(const float offset) {
+    m_vOffset = offset;
+}
+
+
+float Segment::getLength() const {
+    if (mDistances.empty()) return 0.0f;
+    return mDistances.back();
+}
+
+
+
 void Segment::updateNormals(const std::optional<sf::Vector2f> startNormal, const std::optional<sf::Vector2f> endNormal) {
     customStartNormal = startNormal;
     customEndNormal = endNormal;
@@ -103,7 +115,7 @@ void Segment::generateAsphaltMesh() {
                 uScale = std::sqrt(normal.x * normal.x + normal.y * normal.y);
             }
 
-            float v = mDistances[i];
+            const float v = m_vOffset + mDistances[i];
 
             sf::Vector2f leftPos  = center + normal * currentLeftOffset;
             sf::Vector2f rightPos = center + normal * laneRightOffset;
@@ -175,7 +187,7 @@ void Segment::generateMarkingsMesh() {
                 normal = customEndNormal.value();
             }
 
-            float v = mDistances[i];
+            const float v = m_vOffset + mDistances[i];
 
             sf::Vector2f leftPos  = center + normal * leftLineOffset;
             sf::Vector2f rightPos = center + normal * rightLineOffset;

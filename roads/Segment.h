@@ -26,6 +26,10 @@ public:
     [[nodiscard]] Node* getEnd() const { return end; }
     [[nodiscard]] const sf::Vector2f& getCurvePoint() const { return curvePoint; }
 
+    void setVOffset(float offset);
+    [[nodiscard]] float getVOffset() const { return m_vOffset; };
+    [[nodiscard]] float getLength() const;
+
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomStartNormal() const { return customStartNormal; }
     [[nodiscard]] const std::optional<sf::Vector2f>& getCustomEndNormal() const { return customEndNormal; }
 
@@ -52,6 +56,7 @@ private:
     sf::VertexArray asphaltMesh;
     sf::VertexArray markingsMesh;
 
+    float m_vOffset = 0.0f;
     std::vector<float> mDistances;
 
     void precalculateDistances();

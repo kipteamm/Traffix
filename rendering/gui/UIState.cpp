@@ -90,11 +90,13 @@ RoadBuildUI::RoadBuildUI(const sf::Window &window)
 
     oneWayRoadButton.setOnClick([](Game* game){
         std::cout << "One-way road selected!" << std::endl;
+        game->getRoadBuilder()->setConfig(CONFIGURATIONS["Single lane - One Directional"]);
         game->setState(GameState::BuildingRoad);
     });
 
     twoWayRoadButton.setOnClick([](Game* game){
         std::cout << "Two-way road selected!" << std::endl;
+        game->getRoadBuilder()->setConfig(CONFIGURATIONS["Two lane - Bi Directional"]);
         game->setState(GameState::BuildingRoad);
     });
 

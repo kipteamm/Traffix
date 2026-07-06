@@ -20,6 +20,11 @@ namespace Atlas {
     constexpr float DASHED_U_START  = 288.0f;
     constexpr float DASHED_U_END    = 320.0f;
 
+    // Arrow: Pixels 320 to 352 (64px chunk)
+    constexpr float ARROW_U_START = 320.0f;
+    constexpr float ARROW_U_END   = 352.0f;
+    constexpr float ARROW_V_SIZE  = 64.0f;
+
     constexpr float CENTER_U = (ASPHALT_U_START + ASPHALT_U_END) / 2.0f;
 }
 
@@ -115,16 +120,14 @@ void Segment::precalculateDistances() {
 
 
 void Segment::generateAsphaltMesh() {
-    float totalWidthPx = 0.0f;
-    for (const auto& [widthMeters] : config.lanes) totalWidthPx += widthMeters * Scale::PPM;
-
+    const float totalWidthPx = laneWidth * Scale::PPM;
     float currentLeftOffset = -totalWidthPx / 2.0f;
 
     const float startT = getT(startSetback);
     const float endT = getT(getLength() - endSetback);
 
-    for (const auto& [widthMeters] : config.lanes) {
-        const float laneWidthPx = widthMeters * Scale::PPM;
+    for (const auto& lane : config.lanes) {
+        const float laneWidthPx = lane.widthMeters * Scale::PPM;
         const float laneRightOffset = currentLeftOffset + laneWidthPx;
 
         sf::Vector2f prevLeftPos;
@@ -259,4 +262,82 @@ void Segment::generateMarkingsMesh() {
             prevV = v;
         }
     }
+
+    // Directional arrows are only required for single lane roads
+    if (config.lanes.size() > 1) return;
+
+    generateArrowMesh();
 }
+
+
+constexpr float ARROW_WIDTH = 32.0f;
+constexpr float ARROW_LENGTH = 64.0f;
+
+
+void Segment::generateArrowMesh() {
+    // Start the first arrow 20 meters in so it isn't exactly on the intersection
+    float distanceCursor = 10.0f * Scale::PPM;
+
+    const float totalWidthPx = laneWidth * Scale::PPM;
+
+    while (distanceCursor < getLength() - endSetback) {
+        float currentLeftOffset = -totalWidthPx / 2.0f;
+
+        // Get the 't' value (0.0 to 1.0) along the Bezier curve for this specific distance
+        float t = getT(distanceCursor);
+
+        sf::Vector2f centerPoint = getBezierPoint(start->position, curvePoint, end->position, t);
+        sf::Vector2f normal = getBezierNormal(start->position, curvePoint, end->position, t);
+
+        // Tangent is perpendicular to the normal (normal.y, -normal.x)
+        sf::Vector2f baseTangent(normal.y, -normal.x);
+
+        // Place an arrow in each lane
+        for (const auto& lane : config.lanes) {
+            const float laneWidthPx = lane.widthMeters * Scale::PPM;
+            const float laneCenterOffset = currentLeftOffset + (laneWidthPx / 2.0f);
+
+            sf::Vector2f tangent = baseTangent;
+
+            // Flip the arrow around if the lane goes backward
+            if (lane.direction == BACKWARD) {
+                tangent = -tangent;
+            }
+
+            // Find the exact center of this specific lane
+            sf::Vector2f laneCenterPoint = centerPoint + normal * laneCenterOffset;
+
+            // Calculate the vectors to push out the corners of our rectangle
+            const sf::Vector2f halfWidthVec = normal * (ARROW_WIDTH / 2.0f);
+            const sf::Vector2f halfLengthVec = tangent * (ARROW_LENGTH / 2.0f);
+
+            // Calculate the 4 corners of the rotated quad (rectangle)
+            sf::Vector2f topLeft = laneCenterPoint - halfWidthVec + halfLengthVec;
+            sf::Vector2f topRight = laneCenterPoint + halfWidthVec + halfLengthVec;
+            sf::Vector2f bottomLeft = laneCenterPoint - halfWidthVec - halfLengthVec;
+            sf::Vector2f bottomRight = laneCenterPoint + halfWidthVec - halfLengthVec;
+
+            // UVs based on your Atlas (Assuming you added ARROW_U_START, etc.)
+            sf::Vector2f uvTopLeft(Atlas::ARROW_U_START, 0.0f);
+            sf::Vector2f uvTopRight(Atlas::ARROW_U_END, 0.0f);
+            sf::Vector2f uvBottomLeft(Atlas::ARROW_U_START, Atlas::ARROW_V_SIZE);
+            sf::Vector2f uvBottomRight(Atlas::ARROW_U_END, Atlas::ARROW_V_SIZE);
+
+            // Append the two triangles directly to the markingsMesh
+            markingsMesh.append(sf::Vertex(topLeft, sf::Color::White, uvTopLeft));
+            markingsMesh.append(sf::Vertex(topRight, sf::Color::White, uvTopRight));
+            markingsMesh.append(sf::Vertex(bottomLeft, sf::Color::White, uvBottomLeft));
+
+            markingsMesh.append(sf::Vertex(topRight, sf::Color::White, uvTopRight));
+            markingsMesh.append(sf::Vertex(bottomRight, sf::Color::White, uvBottomRight));
+            markingsMesh.append(sf::Vertex(bottomLeft, sf::Color::White, uvBottomLeft));
+
+            // Move the offset for the next lane
+            currentLeftOffset += laneWidthPx;
+        }
+
+        // Move forward by our fixed interval
+        distanceCursor += Scale::ARROW_SPACING_METERS * Scale::PPM;
+    }
+}
+

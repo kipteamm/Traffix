@@ -85,8 +85,16 @@ void Intersection::generateAsphaltMesh() {
         if (!intersectLines(currentRightEdge, current.tangent, nextLeftEdge, next.tangent, intersectionPoint)) continue;
 
         const sf::Vector2f toIntersection = intersectionPoint - centerPos;
-        const float setbackCurrent = (toIntersection.x * current.tangent.x) + (toIntersection.y * current.tangent.y);
-        const float setbackNext = (toIntersection.x * next.tangent.x) + (toIntersection.y * next.tangent.y);
+        float setbackCurrent = (toIntersection.x * current.tangent.x) + (toIntersection.y * current.tangent.y);
+        float setbackNext = (toIntersection.x * next.tangent.x) + (toIntersection.y * next.tangent.y);
+
+        // Introduce a Miter Limit. Cap the maximum setback to roughly 3x to 4x the road's half-width.
+        // This prevents the mathematical intersection from shooting off to infinity on sharp curves.
+        const float maxSetbackCurrent = current.halfWidth * 4.0f;
+        const float maxSetbackNext = next.halfWidth * 4.0f;
+
+        setbackCurrent = std::min(setbackCurrent, maxSetbackCurrent);
+        setbackNext = std::min(setbackNext, maxSetbackNext);
 
         current.calculatedSetback = std::max(current.calculatedSetback, setbackCurrent);
         next.calculatedSetback = std::max(next.calculatedSetback, setbackNext);
@@ -109,10 +117,22 @@ void Intersection::generateAsphaltMesh() {
 
         const float t = data.segment->getT(targetDist);
 
-        sf::Vector2f cutoffCenter = getBezierPoint(data.segment->getStart()->position, data.segment->getCurvePoint(), data.segment->getEnd()->position, t);
+        const sf::Vector2f p0 = data.segment->getStart()->position;
+        const sf::Vector2f p1 = data.segment->getCurvePoint();
+        const sf::Vector2f p2 = data.segment->getEnd()->position;
 
-        sf::Vector2f leftEdge = cutoffCenter - data.rightNormal * data.halfWidth;
-        sf::Vector2f rightEdge = cutoffCenter + data.rightNormal * data.halfWidth;
+        sf::Vector2f cutoffCenter = getBezierPoint(p0, p1, p2, t);
+        sf::Vector2f actualNormal = getBezierNormal(p0, p1, p2, t);
+
+        // getBezierNormal is relative to the p0->p2 direction.
+        // If this node is at the end of the segment (p2), we must invert the normal
+        // so it maps to the intersection's outward-facing clockwise ordering.
+        if (!data.isStart) {
+            actualNormal = -actualNormal;
+        }
+
+        sf::Vector2f leftEdge = cutoffCenter - actualNormal * data.halfWidth;
+        sf::Vector2f rightEdge = cutoffCenter + actualNormal * data.halfWidth;
 
         boundaryPoints.push_back(sf::Vertex(leftEdge, sf::Color(100, 100, 100)));
         boundaryPoints.push_back(sf::Vertex(rightEdge, sf::Color(100, 100, 100)));

@@ -10,6 +10,9 @@ namespace Scale {
     constexpr float PPM = 32.0f;
     constexpr float LANE_WIDTH_METERS = 3.5f;
     constexpr float LANE_WIDTH_PX = LANE_WIDTH_METERS * PPM;
+
+    // Place an arrow every 30 meters
+    constexpr float ARROW_SPACING_METERS = 30.0f;
 }
 
 
@@ -75,6 +78,7 @@ private:
 
     void generateAsphaltMesh();
     void generateMarkingsMesh();
+    void generateArrowMesh();
 };
 
 

@@ -11,10 +11,14 @@ constexpr int CURVEPOINTS = 20;
 enum MarkingType {
     NONE, SOLID, DASHED
 };
+enum LaneDirection {
+    FORWARD, BACKWARD
+};
 
 
 struct LaneConfig {
     float widthMeters;
+    LaneDirection direction;
 };
 
 
@@ -32,8 +36,8 @@ struct RoadConfig {
 
 
 inline std::unordered_map<std::string, RoadConfig> CONFIGURATIONS = {
-    {"Single lane - One Directional", {{{3.4}}, {{-1.5, SOLID}, {1.5, SOLID}}}},
-    {"Two lane - Bi Directional", {{{3.3}, {3.3}}, {{-3.1, SOLID}, {3.1, SOLID}, {0, DASHED}}}}
+    {"Single lane - One Directional", {{{3.4, FORWARD}}, {{-1.5, SOLID}, {1.5, SOLID}}}},
+    {"Two lane - Bi Directional", {{{3.3, FORWARD}, {3.3, BACKWARD}}, {{-3.1, SOLID}, {3.1, SOLID}, {0, DASHED}}}}
 };
 
 

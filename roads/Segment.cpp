@@ -54,6 +54,12 @@ void Segment::setVOffset(const float offset) {
 }
 
 
+void Segment::setVisible(const bool isVisible) {
+    visible = isVisible;
+}
+
+
+
 float Segment::getLength() const {
     if (mDistances.empty()) return 0.0f;
     return mDistances.back();

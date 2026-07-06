@@ -11,6 +11,8 @@ int main() {
     while (window->isOpen()) {
         game->update();
         game->render();
+
+        sf::sleep(sf::milliseconds(16)); // ~60 FPS
     }
 
     return 0;

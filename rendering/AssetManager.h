@@ -33,12 +33,19 @@ public:
      */
     [[nodiscard]] sf::Texture& getRoadTexture();
 
+    /**
+     * @brief Returns the Vehicle Texture.
+     * @return Roat texture
+     */
+    [[nodiscard]] sf::Texture& getVehicleTexture();
+
 private:
     AssetManager();
 
     sf::Font font;
 
     sf::Texture roadTexture;
+    sf::Texture vehicleTexture;
 };
 
 

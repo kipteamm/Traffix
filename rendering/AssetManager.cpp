@@ -10,6 +10,9 @@ AssetManager::AssetManager() {
     if (!roadTexture.loadFromFile("../assets/textures/road.png"))
         throw std::runtime_error("Could not load 'assets/textures/road.png' asset");
 
+    if (!vehicleTexture.loadFromFile("../assets/textures/vehicles.png"))
+        throw std::runtime_error("Could not load 'assets/textures/vehicles.png' asset");
+
     roadTexture.setRepeated(true);
 }
 
@@ -28,4 +31,9 @@ sf::Font &AssetManager::getFont() {
 
 sf::Texture &AssetManager::getRoadTexture() {
     return roadTexture;
+}
+
+
+sf::Texture &AssetManager::getVehicleTexture() {
+    return vehicleTexture;
 }

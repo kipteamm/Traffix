@@ -5,6 +5,7 @@ Game::Game(const std::shared_ptr<sf::RenderWindow>& window) : window(window) {
     gameRenderer = std::make_unique<GameRenderer>(this, window);
     roadBuilder = std::make_unique<RoadBuilder>();
     roadNetwork = std::make_unique<RoadNetwork>();
+    simulation = std::make_unique<Simulation>();
 }
 
 
@@ -15,7 +16,8 @@ void Game::render() {
 
 
 void Game::update() {
-    return;
+    time++;
+    this->simulation->update(deltaT);
 }
 
 
@@ -23,7 +25,7 @@ void Game::setState(const GameState state) {
     this->state = state;
 }
 
-GameState Game::getState() {
+GameState Game::getState() const {
     return this->state;
 }
 
@@ -70,6 +72,12 @@ void Game::handleEvents() {
 
                 roadBuilder->setMousePosition(mousePos, roadNetwork.get());
                 break;
+            }
+
+            case sf::Event::KeyReleased: {
+                if (event.key.code == sf::Keyboard::S) {
+                    simulation->addVehicle(roadNetwork->getStart());
+                }
             }
 
             default: break;

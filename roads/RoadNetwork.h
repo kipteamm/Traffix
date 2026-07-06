@@ -52,6 +52,9 @@ public:
     Segment* createSegment(Node* start, Node* end, sf::Vector2f control, const RoadConfig& config);
     [[nodiscard]] Intersection* createIntersection(Node* node);
 
+    // temporary
+    [[nodiscard]] Segment* getStart() const { return start; }
+
     [[nodiscard]] GridKey getGridKey(const sf::Vector2f& pos) const;
 
     [[nodiscard]] Node* findNearestNode(const sf::Vector2f& position);
@@ -61,6 +64,9 @@ public:
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
+    // temporary:
+    Segment* start = nullptr;
+
     std::vector<std::unique_ptr<Node>> nodes;
     std::vector<std::unique_ptr<Segment>> segments;
 

@@ -35,6 +35,9 @@ void GameRenderer::renderWorld() {
     // Render roadnetwork
     window->draw(*game->getRoadNetwork());
 
+    // Render traffic
+    window->draw(*game->getSimulation());
+
     // Render preview
     game->getRoadBuilder()->renderPreview(window.get());
 }

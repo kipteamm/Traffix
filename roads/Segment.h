@@ -35,6 +35,9 @@ public:
 
     [[nodiscard]] float getLaneWidth() const { return laneWidth; }
 
+    void setVisible(bool isVisible);
+    [[nodiscard]] bool getVisible() const { return visible; }
+
     void setStartSetback(float distance);
     void setEndSetback(float distance);
 
@@ -59,6 +62,7 @@ private:
     sf::Vector2f curvePoint;
     RoadConfig config;
     float laneWidth = 0;
+    bool visible = false;
 
     // Intersection related
     float startSetback = 0.0f;

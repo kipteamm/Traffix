@@ -113,6 +113,10 @@ Segment* RoadNetwork::createSegment(Node* start, Node* end, sf::Vector2f control
 
     Segment* ptr = segments.back().get();
 
+    if (this->start == nullptr) {
+        this->start = ptr;
+    }
+
     // If this road is connected to just the one other road, continue the
     // texture as if it were one.
     if (start->segments.size() == 1) {
@@ -203,7 +207,12 @@ void RoadNetwork::draw(sf::RenderTarget& target, sf::RenderStates states) const 
     sf::VertexArray visibleMarkings(sf::Triangles);
 
     for (const auto& segment : segments) {
-        if (!viewBounds.intersects(segment->getBounds())) continue;
+        if (!viewBounds.intersects(segment->getBounds())) {
+            segment->setVisible(false);
+            continue;
+        }
+
+        segment->setVisible(true);
 
         // Copy asphalt mesh
         const auto& asphalt = segment->getAsphaltMesh();
